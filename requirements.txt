@@ -4,10 +4,9 @@ python-dotenv
 google-genai
 groq
 yt-dlp
-easyocr
-opencv-python-headless
-python-docx
 fpdf2
+python-docx
 deep-translator
 markdown
 requests
+gunicorn
