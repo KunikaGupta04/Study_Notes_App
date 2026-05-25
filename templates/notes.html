@@ -459,76 +459,142 @@
         }
         .btn-modal-close:hover { background: var(--border); color: var(--text); }
 
-        /* CHATBOT FAB */
+        /* ── CHATBOT FAB ── */
         .chat-fab {
             position: fixed; bottom: 1.8rem; right: 1.8rem;
-            width: 56px; height: 56px;
+            width: 58px; height: 58px;
             background: var(--accent); color: white;
             border: none; border-radius: 50%;
-            font-size: 1.3rem; cursor: pointer;
+            font-size: 1.35rem; cursor: pointer;
             display: flex; align-items: center; justify-content: center;
-            box-shadow: 0 4px 20px rgba(232,97,58,0.45);
+            box-shadow: 0 4px 24px rgba(232,97,58,0.5);
             transition: all 0.25s cubic-bezier(0.34,1.56,0.64,1);
             z-index: 300;
         }
-        .chat-fab:hover { transform: scale(1.1); }
+        .chat-fab:hover { transform: scale(1.12); box-shadow: 0 6px 30px rgba(232,97,58,0.6); }
+        .chat-fab.is-open { background: var(--text2); box-shadow: none; }
 
-        /* CHAT PANEL */
+        /* ── CHAT PANEL ── */
         .chat-panel {
-            position: fixed; bottom: 5.5rem; right: 1.8rem;
-            width: 360px; max-height: 520px;
-            background: var(--surface); border: 1px solid var(--border);
-            border-radius: 20px; display: flex; flex-direction: column;
-            box-shadow: var(--shadow2); z-index: 299;
-            transform: translateY(20px) scale(0.96);
+            position: fixed;
+            bottom: 5.5rem; right: 1.8rem;
+            width: 380px;
+            height: 560px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 22px;
+            display: flex; flex-direction: column;
+            box-shadow: 0 12px 60px rgba(0,0,0,0.18);
+            z-index: 299;
+            transform: translateY(24px) scale(0.95);
             opacity: 0; pointer-events: none;
             transition: all 0.3s cubic-bezier(0.34,1.56,0.64,1);
+            overflow: hidden;
         }
-        .chat-panel.open { transform: translateY(0) scale(1); opacity: 1; pointer-events: all; }
+        .chat-panel.open {
+            transform: translateY(0) scale(1);
+            opacity: 1; pointer-events: all;
+        }
+        /* Expanded state — fills most of the screen */
+        .chat-panel.expanded {
+            width: min(680px, calc(100vw - 3.6rem));
+            height: calc(100vh - 7rem);
+            bottom: 5.5rem;
+        }
 
+        /* ── HEADER ── */
         .chat-header {
             display: flex; align-items: center; justify-content: space-between;
-            padding: 1rem 1.2rem; border-bottom: 1px solid var(--border); flex-shrink: 0;
+            padding: 0.9rem 1.1rem;
+            border-bottom: 1px solid var(--border);
+            flex-shrink: 0;
+            background: var(--surface);
         }
         .chat-header-left { display: flex; align-items: center; gap: 10px; }
         .chat-avatar {
             width: 36px; height: 36px; background: var(--accentbg);
             color: var(--accent); border-radius: 10px;
-            display: flex; align-items: center; justify-content: center; font-size: 1rem;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1rem; flex-shrink: 0;
         }
-        .chat-title { font-weight: 700; font-size: 0.9rem; }
-        .chat-subtitle { font-size: 0.72rem; color: var(--text3); }
-        .chat-close {
+        .chat-title   { font-weight: 700; font-size: 0.9rem; }
+        .chat-subtitle { font-size: 0.71rem; color: var(--text3); margin-top: 1px; }
+
+        .chat-header-actions { display: flex; align-items: center; gap: 6px; }
+        .chat-icon-btn {
             background: var(--surface2); border: 1px solid var(--border);
-            width: 28px; height: 28px; border-radius: 8px;
+            width: 30px; height: 30px; border-radius: 8px;
             cursor: pointer; color: var(--text3);
             display: flex; align-items: center; justify-content: center;
             font-size: 0.78rem; transition: all 0.16s;
         }
-        .chat-close:hover { background: var(--border); color: var(--text); }
+        .chat-icon-btn:hover { background: var(--border); color: var(--text); }
+        .chat-icon-btn.active { background: var(--accentbg); color: var(--accent); border-color: rgba(232,97,58,0.3); }
 
-        .chat-messages {
-            flex: 1; overflow-y: auto; padding: 1rem 1.2rem;
-            display: flex; flex-direction: column; gap: 0.75rem; scroll-behavior: smooth;
+        /* ── TABS ── */
+        .chat-tabs {
+            display: flex;
+            border-bottom: 1px solid var(--border);
+            flex-shrink: 0;
+            background: var(--surface2);
         }
-        .chat-msg { display: flex; }
-        .chat-msg.bot { justify-content: flex-start; }
-        .chat-msg.user { justify-content: flex-end; }
-        .chat-bubble { max-width: 82%; padding: 0.65rem 0.95rem; border-radius: 14px; font-size: 0.84rem; line-height: 1.5; }
-        .chat-msg.bot .chat-bubble { background: var(--surface2); border: 1px solid var(--border); color: var(--text); border-radius: 4px 14px 14px 14px; }
-        .chat-msg.user .chat-bubble { background: var(--accent); color: white; border-radius: 14px 4px 14px 14px; }
-        .chat-typing .chat-bubble { display: flex; align-items: center; gap: 4px; padding: 0.7rem 1rem; }
+        .chat-tab {
+            flex: 1; padding: 10px 6px;
+            background: none; border: none;
+            border-bottom: 2px solid transparent;
+            color: var(--text3); font-size: 0.79rem; font-weight: 600;
+            cursor: pointer; font-family: 'DM Sans', sans-serif;
+            display: flex; align-items: center; justify-content: center; gap: 6px;
+            transition: all 0.18s;
+        }
+        .chat-tab.active {
+            color: var(--accent);
+            border-bottom-color: var(--accent);
+            background: var(--accentbg);
+        }
+        .chat-tab:hover:not(.active) { color: var(--text2); background: var(--bg2); }
 
-        /* Rich chat bubble formatting */
-        .chat-msg.bot .chat-bubble { max-width: 90%; padding: 0.85rem 1.1rem; line-height: 1.65; }
-        .chat-bubble p { margin: 0 0 0.55rem; }
+        /* ── MESSAGES ── */
+        .chat-messages {
+            flex: 1; overflow-y: auto; padding: 1rem 1.1rem;
+            display: flex; flex-direction: column; gap: 0.8rem;
+            scroll-behavior: smooth;
+        }
+        .chat-messages::-webkit-scrollbar { width: 4px; }
+        .chat-messages::-webkit-scrollbar-track { background: transparent; }
+        .chat-messages::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 4px; }
+
+        .chat-msg { display: flex; }
+        .chat-msg.bot  { justify-content: flex-start; }
+        .chat-msg.user { justify-content: flex-end; }
+
+        .chat-bubble {
+            max-width: 85%; padding: 0.75rem 1rem;
+            border-radius: 16px; font-size: 0.84rem; line-height: 1.6;
+        }
+        .chat-msg.bot .chat-bubble {
+            background: var(--surface2); border: 1px solid var(--border);
+            color: var(--text); border-radius: 4px 16px 16px 16px;
+            max-width: 92%;
+        }
+        .chat-msg.user .chat-bubble {
+            background: var(--accent); color: white;
+            border-radius: 16px 4px 16px 16px;
+        }
+        .chat-typing .chat-bubble {
+            display: flex; align-items: center; gap: 4px; padding: 0.8rem 1rem;
+        }
+
+        /* Bubble rich content */
+        .chat-bubble p { margin: 0 0 0.5rem; }
         .chat-bubble p:last-child { margin-bottom: 0; }
         .chat-bubble strong { font-weight: 700; color: var(--text); }
-        .chat-msg.bot .chat-bubble strong { color: var(--text); }
-        .chat-bubble ul, .chat-bubble ol { padding-left: 1.3rem; margin: 0.4rem 0 0.55rem; }
+        .chat-msg.user .chat-bubble strong { color: white; }
+        .chat-bubble ul, .chat-bubble ol { padding-left: 1.3rem; margin: 0.4rem 0 0.5rem; }
         .chat-bubble li { margin: 0.25rem 0; line-height: 1.55; }
         .chat-bubble li::marker { color: var(--accent); }
-        .chat-bubble h3 { font-size: 0.9rem; font-weight: 700; margin: 0.7rem 0 0.3rem; color: var(--text); }
+        .chat-msg.user .chat-bubble li::marker { color: rgba(255,255,255,0.7); }
+        .chat-bubble h3 { font-size: 0.88rem; font-weight: 700; margin: 0.6rem 0 0.3rem; color: var(--text); }
         .chat-bubble h3:first-child { margin-top: 0; }
         .chat-bubble code {
             background: var(--bg2); color: var(--accent2);
@@ -537,27 +603,26 @@
         }
         .chat-msg.user .chat-bubble code { background: rgba(255,255,255,0.2); color: white; }
         .chat-bubble blockquote {
-            border-left: 3px solid var(--accent);
-            background: var(--accentbg);
-            padding: 0.4rem 0.75rem;
-            border-radius: 0 6px 6px 0;
+            border-left: 3px solid var(--accent); background: var(--accentbg);
+            padding: 0.4rem 0.75rem; border-radius: 0 6px 6px 0;
             margin: 0.4rem 0; font-style: italic;
         }
         .chat-bubble hr { border: none; border-top: 1px solid var(--border); margin: 0.6rem 0; }
-        .chat-bubble .chat-tag {
-            display: inline-block; font-size: 0.68rem; font-weight: 700;
-            text-transform: uppercase; letter-spacing: 0.07em;
-            background: var(--accentbg); color: var(--accent);
-            padding: 2px 7px; border-radius: 6px; margin-bottom: 0.5rem;
+
+        .chat-typing .dot {
+            width: 7px; height: 7px; background: var(--text3);
+            border-radius: 50%; animation: bounce 1.2s infinite;
         }
-        .chat-typing .dot { width: 7px; height: 7px; background: var(--text3); border-radius: 50%; animation: bounce 1.2s infinite; }
         .chat-typing .dot:nth-child(2) { animation-delay: 0.2s; }
         .chat-typing .dot:nth-child(3) { animation-delay: 0.4s; }
-        @keyframes bounce { 0%, 60%, 100% { transform: translateY(0); } 30% { transform: translateY(-5px); } }
+        @keyframes bounce { 0%,60%,100% { transform: translateY(0); } 30% { transform: translateY(-5px); } }
 
+        /* ── INPUT AREAS ── */
         .chat-input-area {
-            display: flex; gap: 8px; padding: 0.85rem 1.2rem;
+            display: flex; gap: 8px;
+            padding: 0.8rem 1.1rem;
             border-top: 1px solid var(--border); flex-shrink: 0;
+            background: var(--surface);
         }
         .chat-input {
             flex: 1; border: 1px solid var(--border); background: var(--surface2);
@@ -566,16 +631,43 @@
             font-family: 'DM Sans', sans-serif; transition: border-color 0.2s;
         }
         .chat-input:focus { border-color: var(--accent); }
+        .chat-input::placeholder { color: var(--text3); }
+
         .chat-send {
             width: 38px; height: 38px; background: var(--accent); color: white;
             border: none; border-radius: 10px; cursor: pointer; font-size: 0.85rem;
             display: flex; align-items: center; justify-content: center;
             transition: all 0.18s; flex-shrink: 0;
         }
-        .chat-send:hover { opacity: 0.85; }
-        .chat-send:disabled { opacity: 0.5; cursor: not-allowed; }
+        .chat-send:hover { opacity: 0.85; transform: scale(1.05); }
+        .chat-send:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
 
-        /* TOAST */
+        /* ── SCREENSHOT TAB ── */
+        .screenshot-drop-zone {
+            border: 2px dashed var(--border2); background: var(--surface2);
+            border-radius: 12px; padding: 18px 12px;
+            text-align: center; cursor: pointer; color: var(--text3);
+            font-size: 0.8rem;
+            display: flex; flex-direction: column; align-items: center; gap: 6px;
+            transition: border-color 0.2s, background 0.2s, color 0.2s;
+            min-height: 90px; justify-content: center;
+        }
+        .screenshot-drop-zone:hover,
+        .screenshot-drop-zone.drag-over {
+            border-color: var(--accent);
+            background: var(--accentbg);
+            color: var(--accent);
+        }
+        .screenshot-drop-zone i { font-size: 1.6rem; color: var(--accent); }
+        .screenshot-drop-zone #upload-label { font-weight: 500; }
+
+        .screenshot-send-btn {
+            width: 100%; border-radius: 10px; height: 40px;
+            justify-content: center; gap: 7px;
+            font-size: 0.85rem; font-weight: 600;
+        }
+
+        /* ── TOAST ── */
         .toast {
             position: fixed; bottom: 1.5rem; right: 1.5rem;
             background: var(--surface); border: 1px solid var(--border);
@@ -587,16 +679,23 @@
             z-index: 999; max-width: 300px;
         }
         .toast.show { transform: translateY(0); opacity: 1; }
-        .toast.error { border-color: rgba(239,68,68,0.4); }
+        .toast.error   { border-color: rgba(239,68,68,0.4); }
         .toast.error i { color: #ef4444; }
-        .toast.success { border-color: rgba(47,158,68,0.4); }
+        .toast.success   { border-color: rgba(47,158,68,0.4); }
         .toast.success i { color: var(--green); }
 
         @media (max-width: 768px) {
             .sidebar { display: none; }
             .main-area { padding: 1.5rem 1.2rem 3rem; }
             .notes-panel { padding: 1.5rem; }
-            .chat-panel { width: calc(100vw - 2rem); right: 1rem; }
+            .chat-panel {
+                width: calc(100vw - 2rem); right: 1rem;
+                height: 75vh; bottom: 5rem;
+            }
+            .chat-panel.expanded {
+                width: calc(100vw - 2rem);
+                height: calc(100vh - 6rem);
+            }
         }
     </style>
 </head>
@@ -740,29 +839,87 @@
 
 <!-- CHAT PANEL -->
 <div class="chat-panel" id="chat-panel">
+
+    <!-- Header -->
     <div class="chat-header">
         <div class="chat-header-left">
             <div class="chat-avatar"><i class="fa-solid fa-robot"></i></div>
             <div>
                 <div class="chat-title">Notes Assistant</div>
-                <div class="chat-subtitle">Answers from your notes only</div>
+                <div class="chat-subtitle" id="chat-subtitle">Answers from your notes only</div>
             </div>
         </div>
-        <button class="chat-close" onclick="toggleChat()"><i class="fa-solid fa-xmark"></i></button>
-    </div>
-    <div class="chat-messages" id="chat-messages">
-        <div class="chat-msg bot">
-            <div class="chat-bubble">👋 Hi! Ask me anything about these notes and I'll answer strictly from the content.</div>
+        <div class="chat-header-actions">
+            <button class="chat-icon-btn" id="expand-btn"
+                    onclick="toggleExpand()" title="Expand chat">
+                <i class="fa-solid fa-expand" id="expand-icon"></i>
+            </button>
+            <button class="chat-icon-btn" onclick="clearChat()" title="Clear messages">
+                <i class="fa-solid fa-trash-can"></i>
+            </button>
+            <button class="chat-icon-btn" onclick="toggleChat()" title="Close">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
         </div>
     </div>
-    <div class="chat-input-area">
+
+    <!-- Tabs -->
+    <div class="chat-tabs">
+        <button class="chat-tab active" id="tab-text" onclick="switchTab('text')">
+            <i class="fa-solid fa-comment"></i> Ask Question
+        </button>
+        <button class="chat-tab" id="tab-screenshot" onclick="switchTab('screenshot')">
+            <i class="fa-solid fa-image"></i> Screenshot
+        </button>
+    </div>
+
+    <!-- Messages -->
+    <div class="chat-messages" id="chat-messages">
+        <div class="chat-msg bot">
+            <div class="chat-bubble">👋 Hi! Ask me anything about these notes — or switch to <strong>Screenshot</strong> tab to explain any frame from the video!</div>
+        </div>
+    </div>
+
+    <!-- TEXT INPUT -->
+    <div class="chat-input-area" id="text-input-area">
         <input type="text" id="chat-input" class="chat-input"
                placeholder="Ask about these notes…"
                onkeydown="if(event.key==='Enter') sendChat()">
-        <button class="chat-send" onclick="sendChat()">
+        <button class="chat-send" id="chat-send-btn" onclick="sendChat()">
             <i class="fa-solid fa-paper-plane"></i>
         </button>
     </div>
+
+    <!-- SCREENSHOT INPUT -->
+    <div class="chat-input-area" id="screenshot-input-area"
+         style="display:none; flex-direction:column; gap:8px;">
+
+        <!-- Upload box -->
+        <div class="screenshot-drop-zone" id="drop-zone"
+             onclick="document.getElementById('screenshot-file').click()"
+             ondragover="event.preventDefault(); this.classList.add('drag-over')"
+             ondragleave="this.classList.remove('drag-over')"
+             ondrop="handleDrop(event)">
+            <i class="fa-solid fa-cloud-arrow-up"></i>
+            <span id="upload-label">Click or drag a screenshot here</span>
+            <img id="screenshot-preview" src="" alt=""
+                 style="display:none; max-height:90px; border-radius:8px; margin-top:6px;" />
+        </div>
+        <input type="file" id="screenshot-file" accept="image/*"
+               style="display:none" onchange="previewScreenshot(this)" />
+
+        <!-- Optional question -->
+        <input type="text" id="screenshot-question" class="chat-input"
+               placeholder="Optional: What do you want explained?"
+               onkeydown="if(event.key==='Enter') sendScreenshot()" />
+
+        <!-- Send button -->
+        <button class="chat-send screenshot-send-btn" onclick="sendScreenshot()">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <span>Explain Screenshot</span>
+        </button>
+    </div>
+
 </div>
 
 <!-- DIAGRAM FULLSCREEN MODAL -->
@@ -1186,109 +1343,138 @@ async function generatePPT() {
 }
 
 /* ── CHATBOT ── */
-let chatOpen = false;
+let chatOpen     = false;
+let chatExpanded = false;
+
 function toggleChat() {
     chatOpen = !chatOpen;
-    document.getElementById('chat-panel').classList.toggle('open', chatOpen);
+    const panel = document.getElementById('chat-panel');
+    const fab   = document.getElementById('chat-fab');
+    panel.classList.toggle('open', chatOpen);
+    fab.classList.toggle('is-open', chatOpen);
+    fab.innerHTML = chatOpen
+        ? '<i class="fa-solid fa-xmark"></i>'
+        : '<i class="fa-solid fa-robot"></i>';
     if (chatOpen) document.getElementById('chat-input').focus();
+    if (!chatOpen && chatExpanded) {
+        chatExpanded = false;
+        panel.classList.remove('expanded');
+        document.getElementById('expand-icon').className = 'fa-solid fa-expand';
+        document.getElementById('expand-btn').classList.remove('active');
+    }
 }
+
+function toggleExpand() {
+    chatExpanded = !chatExpanded;
+    document.getElementById('chat-panel').classList.toggle('expanded', chatExpanded);
+    document.getElementById('expand-icon').className = chatExpanded
+        ? 'fa-solid fa-compress' : 'fa-solid fa-expand';
+    document.getElementById('expand-btn').classList.toggle('active', chatExpanded);
+}
+
+function clearChat() {
+    document.getElementById('chat-messages').innerHTML = `
+        <div class="chat-msg bot">
+            <div class="chat-bubble">🧹 Chat cleared! Ask anything about the notes, or switch to <strong>Screenshot</strong> tab to explain a video frame.</div>
+        </div>`;
+}
+
+/* ── TAB SWITCHING ── */
+function switchTab(tab) {
+    document.getElementById('tab-text').classList.toggle('active', tab === 'text');
+    document.getElementById('tab-screenshot').classList.toggle('active', tab === 'screenshot');
+    document.getElementById('text-input-area').style.display      = tab === 'text'       ? 'flex'   : 'none';
+    document.getElementById('screenshot-input-area').style.display = tab === 'screenshot' ? 'flex'   : 'none';
+    document.getElementById('chat-subtitle').textContent =
+        tab === 'text' ? 'Answers from your notes only' : 'Explain any video screenshot';
+    if (tab === 'text') document.getElementById('chat-input').focus();
+}
+
 /* ── LIGHTWEIGHT MARKDOWN PARSER FOR CHAT ── */
 function parseChatMarkdown(text) {
-    // Escape HTML first to prevent XSS
     text = text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-
-    // Code blocks (```...```)
     text = text.replace(/```[\w]*\n?([\s\S]*?)```/g,
         '<pre style="background:var(--bg2);padding:0.6rem 0.8rem;border-radius:8px;overflow-x:auto;font-size:0.8rem;margin:0.4rem 0"><code>$1</code></pre>');
-
-    // Inline code
     text = text.replace(/`([^`]+)`/g, '<code>$1</code>');
-
-    // Bold
     text = text.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
-
-    // Italic
     text = text.replace(/\*(.+?)\*/g, '<em>$1</em>');
-
-    // ### headings
     text = text.replace(/^###\s+(.+)$/gm, '<h3>$1</h3>');
-    // ## headings
-    text = text.replace(/^##\s+(.+)$/gm, '<h3>$1</h3>');
-
-    // Horizontal rule
+    text = text.replace(/^##\s+(.+)$/gm,  '<h3>$1</h3>');
     text = text.replace(/^---+$/gm, '<hr>');
-
-    // Blockquote
     text = text.replace(/^>\s+(.+)$/gm, '<blockquote>$1</blockquote>');
-
-    // Unordered lists — group consecutive bullet lines
     text = text.replace(/((?:^[\-\*]\s.+\n?)+)/gm, (block) => {
         const items = block.trim().split('\n')
-            .map(l => `<li>${l.replace(/^[\-\*]\s/, '').trim()}</li>`)
-            .join('');
+            .map(l => `<li>${l.replace(/^[\-\*]\s/, '').trim()}</li>`).join('');
         return `<ul>${items}</ul>`;
     });
-
-    // Ordered lists
     text = text.replace(/((?:^\d+\.\s.+\n?)+)/gm, (block) => {
         const items = block.trim().split('\n')
-            .map(l => `<li>${l.replace(/^\d+\.\s/, '').trim()}</li>`)
-            .join('');
+            .map(l => `<li>${l.replace(/^\d+\.\s/, '').trim()}</li>`).join('');
         return `<ol>${items}</ol>`;
     });
-
-    // Paragraphs — wrap remaining lines
     text = text.split('\n\n').map(block => {
         block = block.trim();
         if (!block) return '';
-        // Don't wrap if already a block element
         if (/^<(ul|ol|h[1-6]|pre|hr|blockquote)/.test(block)) return block;
         return `<p>${block.replace(/\n/g, '<br>')}</p>`;
     }).join('');
-
     return text;
 }
 
-function appendMsg(role, text) {
+function appendMsg(role, text, isImage = false) {
     const msgs = document.getElementById('chat-messages');
-    const div = document.createElement('div');
+    const div  = document.createElement('div');
     div.className = `chat-msg ${role}`;
-    const content = role === 'bot' ? parseChatMarkdown(text) : text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    let content;
+    if (isImage) {
+        // Show thumbnail + optional question text
+        content = text;
+    } else {
+        content = role === 'bot'
+            ? parseChatMarkdown(text)
+            : text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
     div.innerHTML = `<div class="chat-bubble">${content}</div>`;
     msgs.appendChild(div);
     msgs.scrollTop = msgs.scrollHeight;
 }
+
 function showTyping() {
     const msgs = document.getElementById('chat-messages');
-    const div = document.createElement('div');
+    const div  = document.createElement('div');
     div.className = 'chat-msg bot chat-typing';
     div.id = 'typing-indicator';
     div.innerHTML = `<div class="chat-bubble"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>`;
     msgs.appendChild(div);
     msgs.scrollTop = msgs.scrollHeight;
 }
+
 function removeTyping() {
     const t = document.getElementById('typing-indicator');
     if (t) t.remove();
 }
+
+/* ── TEXT CHAT ── */
 async function sendChat() {
-    const input = document.getElementById('chat-input');
-    const sendBtn = document.querySelector('.chat-send');
-    const msg = input.value.trim();
+    const input   = document.getElementById('chat-input');
+    const sendBtn = document.getElementById('chat-send-btn');
+    const msg     = input.value.trim();
     if (!msg) return;
+
     appendMsg('user', msg);
     input.value = '';
     sendBtn.disabled = true;
     showTyping();
+
     try {
-        const res = await fetch('/chat', {
+        const res  = await fetch('/chat', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ message: msg })
         });
         const data = await res.json();
         removeTyping();
-        appendMsg('bot', data.response || 'Sorry, I could not respond.');
+        appendMsg('bot', data.response || data.reply || 'Sorry, I could not respond.');
     } catch(e) {
         removeTyping();
         appendMsg('bot', '⚠️ Connection error. Please try again.');
@@ -1296,6 +1482,86 @@ async function sendChat() {
         sendBtn.disabled = false;
         input.focus();
     }
+}
+
+/* ── SCREENSHOT PREVIEW ── */
+function previewScreenshot(input) {
+    const file = input.files[0];
+    if (!file) return;
+    _loadPreview(file);
+}
+
+function handleDrop(e) {
+    e.preventDefault();
+    document.getElementById('drop-zone').classList.remove('drag-over');
+    const file = e.dataTransfer.files[0];
+    if (!file || !file.type.startsWith('image/')) {
+        showToast('Please drop an image file.', 'error');
+        return;
+    }
+    // Manually assign to file input
+    const dt   = new DataTransfer();
+    dt.items.add(file);
+    document.getElementById('screenshot-file').files = dt.files;
+    _loadPreview(file);
+}
+
+function _loadPreview(file) {
+    const preview = document.getElementById('screenshot-preview');
+    const label   = document.getElementById('upload-label');
+    const reader  = new FileReader();
+    reader.onload  = e => {
+        preview.src          = e.target.result;
+        preview.style.display = 'block';
+        label.textContent    = '📎 ' + file.name;
+    };
+    reader.readAsDataURL(file);
+}
+
+/* ── SCREENSHOT SEND ── */
+async function sendScreenshot() {
+    const fileInput = document.getElementById('screenshot-file');
+    const question  = document.getElementById('screenshot-question').value.trim();
+
+    if (!fileInput.files[0]) {
+        showToast('Please upload a screenshot first!', 'error');
+        return;
+    }
+
+    const file = fileInput.files[0];
+
+    // Show user message with thumbnail
+    const previewSrc = document.getElementById('screenshot-preview').src;
+    const userHTML   = `
+        <div style="display:flex;flex-direction:column;gap:5px;align-items:flex-end">
+            <img src="${previewSrc}" style="max-height:80px;border-radius:8px;border:1px solid rgba(255,255,255,0.2)" />
+            ${question ? `<span style="font-size:0.82rem">❓ ${question}</span>` : '<span style="font-size:0.75rem;opacity:0.8">Explain this screenshot</span>'}
+        </div>`;
+    appendMsg('user', userHTML, true);
+    showTyping();
+
+    const formData = new FormData();
+    formData.append('screenshot', file);
+    formData.append('question',   question);
+
+    try {
+        const res  = await fetch('/chat-screenshot', {
+            method: 'POST',
+            body:   formData
+        });
+        const data = await res.json();
+        removeTyping();
+        appendMsg('bot', data.reply || data.error || 'Sorry, could not analyze the screenshot.');
+    } catch(e) {
+        removeTyping();
+        appendMsg('bot', '⚠️ Connection error. Please try again.');
+    }
+
+    // Reset upload box
+    fileInput.value = '';
+    document.getElementById('screenshot-preview').style.display = 'none';
+    document.getElementById('upload-label').textContent  = 'Click or drag a screenshot here';
+    document.getElementById('screenshot-question').value = '';
 }
 </script>
 </body>

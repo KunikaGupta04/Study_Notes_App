@@ -249,6 +249,83 @@ def chat():
     return jsonify({"response": "All AI keys are at limit. Try again in a minute."}), 503
 
 
+@app.route('/chat-screenshot', methods=['POST'])
+def chat_screenshot():
+    """Gemini Vision — explains a screenshot using notes as context."""
+
+    if 'screenshot' not in request.files:
+        return jsonify({'reply': 'No screenshot uploaded.'}), 400
+
+    file = request.files['screenshot']
+    if not file or file.filename == '':
+        return jsonify({'reply': 'No file selected.'}), 400
+
+    # Validate MIME type
+    allowed_types = {'image/jpeg', 'image/png', 'image/webp', 'image/gif'}
+    mime_type = file.content_type or 'image/jpeg'
+    if mime_type not in allowed_types:
+        return jsonify({'reply': 'Only JPG, PNG, or WEBP images are supported.'}), 400
+
+    # Read & size-check (max 5 MB)
+    image_bytes = file.read()
+    if len(image_bytes) > 5 * 1024 * 1024:
+        return jsonify({'reply': 'Image too large. Please use an image under 5 MB.'}), 400
+
+    # Get optional follow-up question
+    user_question  = request.form.get('question', '').strip()
+    notes_context  = session.get('notes_raw', '')[:5000]
+
+    if not notes_context:
+        return jsonify({'reply': 'No notes found in session. Please generate notes first.'})
+
+    # Build prompt
+    question_part = f"\n\nStudent's specific question: {user_question}" if user_question else ""
+    prompt = (
+        "You are a helpful study assistant for SmartNotes AI.\n\n"
+        "A student shared a screenshot taken from a YouTube educational video they are studying.\n\n"
+        f"Here are the notes already generated from this video:\n---\n{notes_context}\n---\n\n"
+        "Your task:\n"
+        "1. Look carefully at the screenshot and identify what is shown "
+        "(concept, diagram, equation, slide, code, graph, etc.)\n"
+        "2. Explain it clearly in student-friendly language\n"
+        "3. Connect it to the notes context where relevant\n"
+        "4. If it shows a diagram or flowchart, explain each component\n"
+        "5. If it shows an equation or formula, break it down step by step\n"
+        "6. Keep the explanation concise, well-structured, and easy to understand\n"
+        f"{question_part}\n\n"
+        "Do NOT make up information that is not visible in the screenshot or present in the notes."
+    )
+
+    from google import genai
+    from google.genai import types
+    from modules.gemini_client import VALID_KEYS, MODELS
+    import time
+
+    for api_key in VALID_KEYS:
+        client = genai.Client(api_key=api_key)
+        for model in MODELS:
+            try:
+                response = client.models.generate_content(
+                    model=model,
+                    contents=[
+                        types.Part.from_bytes(data=image_bytes, mime_type=mime_type),
+                        types.Part.from_text(text=prompt),
+                    ]
+                )
+                return jsonify({'reply': response.text.strip()})
+            except Exception as e:
+                err = str(e)
+                if any(c in err for c in ["429", "503", "quota", "UNAVAILABLE"]):
+                    time.sleep(3)
+                    continue
+                elif "404" in err:
+                    break
+                else:
+                    continue
+
+    return jsonify({'reply': 'All API keys are at limit. Please try again in a minute.'}), 503
+
+
 @app.route('/debug/gemini')
 def debug_gemini():
     from google import genai
