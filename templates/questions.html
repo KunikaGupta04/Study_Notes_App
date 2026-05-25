@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Q&amp;A Bank — SmartNotes AI</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;500;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <style>
+        /* ══════════════════════════════════
+           TOKENS
+        ══════════════════════════════════ */
+        [data-theme="light"] {
+            --bg:         #fafaf8;
+            --surface:    #ffffff;
+            --surface2:   #f7f5f0;
+            --border:     #e8e3d9;
+            --border2:    #d4cfc4;
+            --text:       #1a1814;
+            --text2:      #5c574e;
+            --text3:      #9c9589;
+            --accent:     #e8613a;
+            --accent2:    #f0945a;
+            --accentbg:   #fff3ee;
+            --accentbdr:  rgba(232,97,58,0.2);
+            --blue:       #3b5bdb;
+            --bluebg:     #eef2ff;
+            --bluebdr:    rgba(59,91,219,0.2);
+            --purple:     #7048e8;
+            --purplebg:   #f3f0ff;
+            --purplebdr:  rgba(112,72,232,0.2);
+            --green:      #2f9e44;
+            --greenbg:    #ebfbee;
+            --greenbdr:   rgba(47,158,68,0.2);
+            --shadow:     0 4px 24px rgba(26,24,20,0.07);
+            --shadow2:    0 2px 8px rgba(26,24,20,0.05);
+            --nav-bg:     rgba(250,250,248,0.9);
+        }
+        [data-theme="dark"] {
+            --bg:         #111110;
+            --surface:    #1e1d1b;
+            --surface2:   #252420;
+            --border:     #2e2c28;
+            --border2:    #3d3b36;
+            --text:       #f0ede8;
+            --text2:      #a09b92;
+            --text3:      #6b6660;
+            --accent:     #f07040;
+            --accent2:    #f59060;
+            --accentbg:   #2a1c14;
+            --accentbdr:  rgba(240,112,64,0.2);
+            --blue:       #748ffc;
+            --bluebg:     #1a1d35;
+            --bluebdr:    rgba(116,143,252,0.2);
+            --purple:     #9775fa;
+            --purplebg:   #1c1630;
+            --purplebdr:  rgba(151,117,250,0.2);
+            --green:      #51cf66;
+            --greenbg:    #0f2414;
+            --greenbdr:   rgba(81,207,102,0.2);
+            --shadow:     0 4px 24px rgba(0,0,0,0.35);
+            --shadow2:    0 2px 8px rgba(0,0,0,0.25);
+            --nav-bg:     rgba(17,17,16,0.9);
+        }
+
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        html { scroll-behavior: smooth; }
+
+        body {
+            font-family: 'DM Sans', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            transition: background 0.35s, color 0.35s;
+        }
+
+        /* ══ NAV ══ */
+        .nav {
+            position: sticky; top: 0; z-index: 100;
+            background: var(--nav-bg);
+            backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
+            border-bottom: 1px solid var(--border);
+            height: 56px;
+            display: flex; align-items: center;
+            padding: 0 1.5rem; gap: 12px;
+        }
+        .nav-logo {
+            display: flex; align-items: center; gap: 9px;
+            font-family: 'Bricolage Grotesque', sans-serif;
+            font-size: 1.05rem; font-weight: 700;
+            color: var(--text); text-decoration: none;
+            letter-spacing: -0.02em;
+        }
+        .nav-logo-icon {
+            width: 28px; height: 28px; background: var(--accent);
+            border-radius: 8px; display: flex; align-items: center;
+            justify-content: center; color: white; font-size: 0.72rem;
+        }
+        .nav-sep { width: 1px; height: 20px; background: var(--border); }
+        .nav-crumb { font-size: 0.82rem; color: var(--text3); }
+        .nav-right { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+
+        .nav-btn {
+            display: flex; align-items: center; gap: 6px;
+            background: var(--surface2); border: 1px solid var(--border);
+            border-radius: 8px; padding: 5px 12px;
+            font-size: 0.8rem; font-weight: 600;
+            color: var(--text2); cursor: pointer;
+            text-decoration: none; transition: all 0.18s;
+        }
+        .nav-btn:hover { border-color: var(--border2); color: var(--text); }
+        .nav-btn.accent-btn { background: var(--accent); color: white; border-color: transparent; }
+        .nav-btn.accent-btn:hover { opacity: 0.88; }
+
+        .btn-icon {
+            width: 32px; height: 32px;
+            background: var(--surface2); border: 1px solid var(--border);
+            border-radius: 8px; cursor: pointer; color: var(--text2);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 0.82rem; transition: all 0.18s;
+        }
+        .btn-icon:hover { background: var(--border); color: var(--text); }
+
+        /* ══ PAGE ══ */
+        main {
+            max-width: 840px;
+            margin: 0 auto;
+            padding: 2.5rem 1.5rem 5rem;
+        }
+
+        /* ── Hero ── */
+        .page-hero {
+            text-align: center;
+            margin-bottom: 2.5rem;
+        }
+        .page-hero-eyebrow {
+            display: inline-flex; align-items: center; gap: 6px;
+            background: var(--bluebg);
+            border: 1px solid var(--bluebdr);
+            color: var(--blue);
+            font-size: 0.72rem; font-weight: 700;
+            padding: 4px 12px; border-radius: 20px;
+            margin-bottom: 0.9rem;
+            letter-spacing: 0.06em; text-transform: uppercase;
+        }
+        .page-hero h1 {
+            font-family: 'Bricolage Grotesque', sans-serif;
+            font-size: clamp(1.8rem, 4vw, 2.4rem);
+            font-weight: 800; letter-spacing: -0.03em;
+            margin-bottom: 0.4rem;
+        }
+        .page-hero p { font-size: 0.88rem; color: var(--text3); }
+
+        /* ── Filter Tabs ── */
+        .filter-bar {
+            display: flex; align-items: center; gap: 8px;
+            margin-bottom: 1.8rem;
+            flex-wrap: wrap;
+        }
+        .filter-label {
+            font-size: 0.72rem; font-weight: 700;
+            text-transform: uppercase; letter-spacing: 0.08em;
+            color: var(--text3); margin-right: 4px;
+        }
+
+        .filter-tab {
+            display: flex; align-items: center; gap: 6px;
+            background: var(--surface2); border: 1.5px solid var(--border);
+            border-radius: 20px; padding: 5px 14px;
+            font-size: 0.78rem; font-weight: 600;
+            color: var(--text2); cursor: pointer;
+            transition: all 0.18s; font-family: 'DM Sans', sans-serif;
+        }
+        .filter-tab:hover { border-color: var(--border2); color: var(--text); }
+        .filter-tab.active.all     { background: var(--surface); border-color: var(--border2); color: var(--text); }
+        .filter-tab.active.mcq    { background: var(--bluebg); border-color: var(--bluebdr); color: var(--blue); }
+        .filter-tab.active.short  { background: var(--purplebg); border-color: var(--purplebdr); color: var(--purple); }
+        .filter-tab.active.long   { background: var(--accentbg); border-color: var(--accentbdr); color: var(--accent); }
+
+        .tab-count {
+            background: rgba(0,0,0,0.06);
+            border-radius: 10px; padding: 1px 6px;
+            font-size: 0.68rem;
+        }
+        [data-theme="dark"] .tab-count { background: rgba(255,255,255,0.08); }
+
+        .filter-actions { margin-left: auto; display: flex; gap: 8px; }
+        .action-btn {
+            display: flex; align-items: center; gap: 5px;
+            background: var(--surface2); border: 1px solid var(--border);
+            border-radius: 8px; padding: 5px 11px;
+            font-size: 0.76rem; font-weight: 600; color: var(--text2);
+            cursor: pointer; transition: all 0.18s;
+            font-family: 'DM Sans', sans-serif;
+        }
+        .action-btn:hover { border-color: var(--border2); color: var(--text); }
+
+        /* ══ SECTION HEADER ══ */
+        .section-head {
+            display: flex; align-items: center; gap: 10px;
+            margin-bottom: 1rem; margin-top: 2.4rem;
+        }
+        .section-head:first-of-type { margin-top: 0; }
+
+        .section-icon {
+            width: 38px; height: 38px; border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1rem; flex-shrink: 0;
+        }
+        .si-blue   { background: var(--bluebg);   color: var(--blue); }
+        .si-purple { background: var(--purplebg);  color: var(--purple); }
+        .si-orange { background: var(--accentbg);  color: var(--accent); }
+
+        .section-head h2 {
+            font-family: 'Bricolage Grotesque', sans-serif;
+            font-size: 1.2rem; font-weight: 800; letter-spacing: -0.02em;
+        }
+        .section-badge {
+            margin-left: auto;
+            background: var(--surface2); border: 1px solid var(--border);
+            border-radius: 20px; padding: 2px 9px;
+            font-size: 0.72rem; font-weight: 700; color: var(--text3);
+        }
+
+        /* ══ Q CARD ══ */
+        .q-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 1.3rem 1.5rem;
+            margin-bottom: 0.75rem;
+            transition: box-shadow 0.2s, border-color 0.2s, transform 0.2s;
+            position: relative; overflow: hidden;
+            animation: fadeUp 0.4s ease both;
+        }
+        .q-card:hover {
+            box-shadow: var(--shadow);
+            border-color: var(--border2);
+            transform: translateY(-1px);
+        }
+
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(10px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Side accent */
+        .q-card::before {
+            content: '';
+            position: absolute; top: 0; left: 0;
+            width: 3px; height: 100%;
+            border-radius: 3px 0 0 3px;
+        }
+        .q-card.mcq::before   { background: var(--blue); }
+        .q-card.short::before { background: var(--purple); }
+        .q-card.long::before  { background: var(--accent); }
+
+        .q-meta {
+            display: flex; align-items: center; gap: 8px;
+            margin-bottom: 0.55rem;
+        }
+        .q-num {
+            font-size: 0.68rem; font-weight: 800;
+            letter-spacing: 0.1em; text-transform: uppercase;
+            color: var(--text3);
+        }
+        .q-type-dot {
+            width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0;
+        }
+        .dot-blue   { background: var(--blue); }
+        .dot-purple { background: var(--purple); }
+        .dot-orange { background: var(--accent); }
+
+        .q-text {
+            font-family: 'Bricolage Grotesque', sans-serif;
+            font-size: 0.97rem; font-weight: 600;
+            line-height: 1.55; letter-spacing: -0.01em;
+            color: var(--text); margin-bottom: 0.9rem;
+        }
+
+        /* Reveal button */
+        .btn-reveal {
+            border: none; background: none;
+            font-family: 'DM Sans', sans-serif;
+            font-size: 0.78rem; font-weight: 700;
+            cursor: pointer;
+            display: inline-flex; align-items: center; gap: 5px;
+            padding: 4px 10px; border-radius: 7px;
+            transition: all 0.18s;
+        }
+        .btn-reveal.blue   { color: var(--blue);   background: var(--bluebg); }
+        .btn-reveal.purple { color: var(--purple);  background: var(--purplebg); }
+        .btn-reveal.orange { color: var(--accent);  background: var(--accentbg); }
+        .btn-reveal:hover  { filter: brightness(0.92); transform: scale(1.03); }
+
+        /* Answer box */
+        .answer-box {
+            display: none;
+            margin-top: 0.9rem;
+            padding: 0.9rem 1.1rem;
+            border-radius: 10px;
+            font-size: 0.87rem; line-height: 1.7;
+            font-family: 'DM Sans', sans-serif;
+        }
+        .answer-box.show {
+            display: block;
+            animation: answerIn 0.28s cubic-bezier(0.34,1.56,0.64,1) both;
+        }
+        @keyframes answerIn {
+            from { opacity: 0; transform: translateY(-8px) scale(0.98); }
+            to   { opacity: 1; transform: translateY(0)  scale(1); }
+        }
+
+        .answer-box.blue   { background: var(--bluebg);   color: var(--blue);   border-left: 3px solid var(--blue); }
+        .answer-box.purple { background: var(--purplebg);  color: var(--purple);  border-left: 3px solid var(--purple); }
+        .answer-box.orange { background: var(--accentbg);  color: var(--accent);  border-left: 3px solid var(--accent); }
+
+        .ans-label {
+            font-size: 0.65rem; font-weight: 800;
+            text-transform: uppercase; letter-spacing: 0.12em;
+            opacity: 0.55; margin-bottom: 0.3rem;
+        }
+        .ans-text { color: var(--text2); font-size: 0.87rem; line-height: 1.7; }
+        [data-theme="dark"] .ans-text { color: var(--text2); }
+
+        /* ══ DIVIDER ══ */
+        .divider { height: 1px; background: var(--border); margin: 2rem 0; }
+
+        /* ══ EMPTY STATE ══ */
+        .empty-section {
+            display: none;
+            text-align: center; padding: 2rem;
+            color: var(--text3); font-size: 0.86rem;
+        }
+        .empty-section.show { display: block; }
+
+        /* ══ REVEAL ALL TOGGLE ══ */
+        .reveal-all-bar {
+            display: flex; justify-content: flex-end;
+            margin-bottom: 0.8rem;
+        }
+
+        /* ══ PRINT ══ */
+        @media print {
+            .nav, .filter-bar, .btn-reveal, .reveal-all-bar { display: none !important; }
+            .answer-box { display: block !important; }
+            .q-card { break-inside: avoid; }
+        }
+
+        /* ══ RESPONSIVE ══ */
+        @media (max-width: 540px) {
+            main { padding: 1.5rem 1rem 4rem; }
+            .filter-actions { display: none; }
+            .nav-btn:not(.accent-btn) { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- ══ NAV ══ -->
+<nav class="nav">
+    <a class="nav-logo" href="/">
+        <div class="nav-logo-icon"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
+        SmartNotes
+    </a>
+    <div class="nav-sep"></div>
+    <span class="nav-crumb">Q&amp;A Bank</span>
+
+    <div class="nav-right">
+        <a href="/quiz" class="nav-btn accent-btn">
+            <i class="fa-solid fa-bolt"></i> Start Quiz
+        </a>
+        <a href="/notes" class="nav-btn">
+            <i class="fa-solid fa-arrow-left"></i> Notes
+        </a>
+        <button class="btn-icon" onclick="window.print()" title="Print">
+            <i class="fa-solid fa-print"></i>
+        </button>
+        <button class="btn-icon" id="theme-toggle" title="Toggle theme">
+            <i class="fa-solid fa-moon" id="theme-icon"></i>
+        </button>
+    </div>
+</nav>
+
+<!-- ══ MAIN ══ -->
+<main>
+
+    <!-- Hero -->
+    <div class="page-hero">
+        <div class="page-hero-eyebrow">
+            <i class="fa-solid fa-list-check"></i>
+            Study Assignment
+        </div>
+        <h1>Q&amp;A Bank</h1>
+        <p>Click any card to reveal the answer &mdash; or reveal all at once.</p>
+    </div>
+
+    <!-- Filter Bar -->
+    <div class="filter-bar">
+        <span class="filter-label">Filter:</span>
+        <button class="filter-tab active all" data-filter="all" onclick="setFilter('all', this)">
+            <i class="fa-solid fa-layer-group"></i> All
+            <span class="tab-count" id="count-all">0</span>
+        </button>
+        <button class="filter-tab mcq" data-filter="mcq" onclick="setFilter('mcq', this)">
+            <i class="fa-solid fa-bullseye"></i> MCQ
+            <span class="tab-count" id="count-mcq">0</span>
+        </button>
+        <button class="filter-tab short" data-filter="short" onclick="setFilter('short', this)">
+            <i class="fa-solid fa-pen-nib"></i> Short
+            <span class="tab-count" id="count-short">0</span>
+        </button>
+        <button class="filter-tab long" data-filter="long" onclick="setFilter('long', this)">
+            <i class="fa-solid fa-book-open"></i> Essay
+            <span class="tab-count" id="count-long">0</span>
+        </button>
+
+        <div class="filter-actions">
+            <button class="action-btn" onclick="revealAll()">
+                <i class="fa-solid fa-eye"></i> Reveal All
+            </button>
+            <button class="action-btn" onclick="hideAll()">
+                <i class="fa-solid fa-eye-slash"></i> Hide All
+            </button>
+        </div>
+    </div>
+
+    <!-- ── MCQ Section ── -->
+    <div class="section-group" id="group-mcq">
+        <div class="section-head">
+            <div class="section-icon si-blue"><i class="fa-solid fa-bullseye"></i></div>
+            <h2>Multiple Choice</h2>
+            <span class="section-badge" id="badge-mcq">0</span>
+        </div>
+        <div id="mcq-list"></div>
+        <div class="empty-section" id="empty-mcq">No MCQs available.</div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- ── Short Questions ── -->
+    <div class="section-group" id="group-short">
+        <div class="section-head">
+            <div class="section-icon si-purple"><i class="fa-solid fa-pen-nib"></i></div>
+            <h2>Short Questions</h2>
+            <span class="section-badge" id="badge-short">0</span>
+        </div>
+        <div id="short-list"></div>
+        <div class="empty-section" id="empty-short">No short questions available.</div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- ── Long / Essay Questions ── -->
+    <div class="section-group" id="group-long">
+        <div class="section-head">
+            <div class="section-icon si-orange"><i class="fa-solid fa-book-open"></i></div>
+            <h2>Critical Thinking</h2>
+            <span class="section-badge" id="badge-long">0</span>
+        </div>
+        <div id="long-list"></div>
+        <div class="empty-section" id="empty-long">No essay questions available.</div>
+    </div>
+
+</main>
+
+<script>
+    /* ── THEME ── */
+    const html = document.documentElement;
+    let theme = localStorage.getItem('sn-theme') || 'light';
+    function applyTheme(t) {
+        html.setAttribute('data-theme', t);
+        document.getElementById('theme-icon').className = t === 'dark' ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
+        localStorage.setItem('sn-theme', t);
+    }
+    applyTheme(theme);
+    document.getElementById('theme-toggle').onclick = () => { theme = theme === 'light' ? 'dark' : 'light'; applyTheme(theme); };
+
+    /* ── DATA ── */
+    const data = JSON.parse('{{ data | tojson | safe }}');
+    const mcqs   = data.mcqs           || [];
+    const shorts = data.short_questions || [];
+    const longs  = data.long_questions  || [];
+
+    /* ── BUILD CARDS ── */
+    function buildCard(item, idx, type) {
+        const colorMap = { mcq: 'blue', short: 'purple', long: 'orange' };
+        const dotMap   = { mcq: 'dot-blue', short: 'dot-purple', long: 'dot-orange' };
+        const labelMap = { mcq: 'MCQ', short: 'Short Answer', long: 'Essay' };
+        const revealMap = { mcq: 'Reveal Answer', short: 'Show Answer', long: 'See Explanation' };
+
+        const color  = colorMap[type];
+        const dot    = dotMap[type];
+        const id     = `${type}-${idx}`;
+
+        const card = document.createElement('div');
+        card.className = `q-card ${type}`;
+        card.dataset.type = type;
+        card.style.animationDelay = `${idx * 0.04}s`;
+
+        card.innerHTML = `
+            <div class="q-meta">
+                <span class="q-num">${labelMap[type]} ${String(idx + 1).padStart(2,'0')}</span>
+                <span class="q-type-dot ${dot}"></span>
+            </div>
+            <div class="q-text">${escHtml(item.question)}</div>
+            <button class="btn-reveal ${color}" onclick="toggleAnswer('${id}', this)" id="btn-${id}">
+                <i class="fa-solid fa-eye"></i> ${revealMap[type]}
+            </button>
+            <div id="${id}" class="answer-box ${color}">
+                <div class="ans-label">Answer</div>
+                <div class="ans-text">${escHtml(item.answer)}</div>
+            </div>`;
+        return card;
+    }
+
+    function escHtml(str) {
+        const d = document.createElement('div');
+        d.appendChild(document.createTextNode(str || ''));
+        return d.innerHTML;
+    }
+
+    function renderSection(items, type, listId, badgeId, emptyId) {
+        const list = document.getElementById(listId);
+        const badge = document.getElementById(badgeId);
+        const empty = document.getElementById(emptyId);
+        badge.textContent = items.length;
+        if (items.length === 0) {
+            empty.classList.add('show');
+            return;
+        }
+        items.forEach((item, i) => list.appendChild(buildCard(item, i, type)));
+    }
+
+    renderSection(mcqs,   'mcq',   'mcq-list',   'badge-mcq',   'empty-mcq');
+    renderSection(shorts, 'short', 'short-list', 'badge-short', 'empty-short');
+    renderSection(longs,  'long',  'long-list',  'badge-long',  'empty-long');
+
+    // Update counts
+    const total = mcqs.length + shorts.length + longs.length;
+    document.getElementById('count-all').textContent   = total;
+    document.getElementById('count-mcq').textContent   = mcqs.length;
+    document.getElementById('count-short').textContent = shorts.length;
+    document.getElementById('count-long').textContent  = longs.length;
+
+    /* ── TOGGLE ANSWER ── */
+    function toggleAnswer(id, btn) {
+        const box = document.getElementById(id);
+        const showing = box.classList.toggle('show');
+        const icon = btn.querySelector('i');
+        icon.className = showing ? 'fa-solid fa-eye-slash' : 'fa-solid fa-eye';
+        // Update text node (preserve icon)
+        btn.childNodes[1].textContent = showing ? ' Hide' : btn.dataset.revealText || ' Reveal Answer';
+    }
+
+    /* ── REVEAL / HIDE ALL ── */
+    function revealAll() {
+        document.querySelectorAll('.answer-box').forEach(box => {
+            if (!box.classList.contains('show')) box.classList.add('show');
+        });
+        document.querySelectorAll('.btn-reveal i').forEach(i => i.className = 'fa-solid fa-eye-slash');
+    }
+
+    function hideAll() {
+        document.querySelectorAll('.answer-box').forEach(box => box.classList.remove('show'));
+        document.querySelectorAll('.btn-reveal i').forEach(i => i.className = 'fa-solid fa-eye');
+    }
+
+    /* ── FILTER ── */
+    let currentFilter = 'all';
+
+    function setFilter(filter, btn) {
+        currentFilter = filter;
+
+        // Update tab active states
+        document.querySelectorAll('.filter-tab').forEach(t => {
+            t.classList.remove('active');
+        });
+        btn.classList.add('active');
+
+        // Show/hide cards
+        document.querySelectorAll('.q-card').forEach(card => {
+            if (filter === 'all' || card.dataset.type === filter) {
+                card.style.display = '';
+            } else {
+                card.style.display = 'none';
+            }
+        });
+
+        // Show/hide sections
+        ['mcq', 'short', 'long'].forEach(type => {
+            const group = document.getElementById(`group-${type}`);
+            if (filter === 'all' || filter === type) {
+                group.style.display = '';
+            } else {
+                group.style.display = 'none';
+            }
+        });
+
+        // Show/hide dividers
+        document.querySelectorAll('.divider').forEach(d => {
+            d.style.display = filter === 'all' ? '' : 'none';
+        });
+    }
+</script>
+</body>
+</html>

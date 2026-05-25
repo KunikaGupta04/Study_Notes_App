@@ -1,0 +1,13 @@
+flask>=3.0
+flask-session
+python-dotenv
+google-genai
+groq
+yt-dlp
+easyocr
+opencv-python-headless
+python-docx
+fpdf2
+deep-translator
+markdown
+requests

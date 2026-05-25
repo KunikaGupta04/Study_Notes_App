@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Study History — SmartNotes AI</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;500;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&family=DM+Serif+Display&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        [data-theme="light"] {
+            --bg: #fafaf8; --bg2: #f4f2ed; --surface: #ffffff;
+            --surface2: #f7f5f0; --border: #e8e3d9; --border2: #d4cfc4;
+            --text: #1a1814; --text2: #5c574e; --text3: #9c9589;
+            --accent: #e8613a; --accent2: #f0945a; --accentbg: #fff3ee;
+            --blue: #3b5bdb; --bluebg: #eef2ff;
+            --green: #2f9e44; --greenbg: #ebfbee;
+            --purple: #7048e8; --purplebg: #f3f0ff;
+            --red: #e03131; --redbg: #fff5f5;
+            --shadow: 0 2px 16px rgba(26,24,20,0.08);
+            --shadow2: 0 8px 40px rgba(26,24,20,0.12);
+            --nav-bg: rgba(250,250,248,0.9);
+        }
+        [data-theme="dark"] {
+            --bg: #111110; --bg2: #1a1917; --surface: #1e1d1b;
+            --surface2: #252420; --border: #2e2c28; --border2: #3d3b36;
+            --text: #f0ede8; --text2: #a09b92; --text3: #6b6660;
+            --accent: #f07040; --accent2: #f59060; --accentbg: #2a1c14;
+            --blue: #748ffc; --bluebg: #1a1d35;
+            --green: #51cf66; --greenbg: #0f2414;
+            --purple: #9775fa; --purplebg: #1c1630;
+            --red: #ff6b6b; --redbg: #2a1414;
+            --shadow: 0 2px 16px rgba(0,0,0,0.4);
+            --shadow2: 0 8px 40px rgba(0,0,0,0.5);
+            --nav-bg: rgba(17,17,16,0.9);
+        }
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'DM Sans', sans-serif;
+            background: var(--bg); color: var(--text);
+            min-height: 100vh; transition: background 0.35s, color 0.35s;
+        }
+
+        /* NAV */
+        .nav {
+            position: sticky; top: 0; z-index: 200;
+            background: var(--nav-bg);
+            backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
+            border-bottom: 1px solid var(--border);
+            height: 56px; display: flex; align-items: center;
+            padding: 0 1.5rem; gap: 12px;
+        }
+        .nav-logo {
+            display: flex; align-items: center; gap: 9px;
+            font-family: 'Bricolage Grotesque', sans-serif;
+            font-size: 1.05rem; font-weight: 700;
+            color: var(--text); text-decoration: none; letter-spacing: -0.02em;
+        }
+        .nav-logo-icon {
+            width: 28px; height: 28px; background: var(--accent);
+            border-radius: 8px; display: flex; align-items: center;
+            justify-content: center; color: white; font-size: 0.72rem;
+        }
+        .nav-sep { width: 1px; height: 20px; background: var(--border); }
+        .nav-crumb { font-size: 0.82rem; color: var(--text3); }
+        .nav-right { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+        .nav-btn {
+            display: flex; align-items: center; gap: 6px;
+            background: var(--surface2); border: 1px solid var(--border);
+            border-radius: 8px; padding: 5px 12px;
+            font-size: 0.8rem; font-weight: 600; color: var(--text2);
+            cursor: pointer; text-decoration: none; transition: all 0.18s;
+            font-family: 'DM Sans', sans-serif;
+        }
+        .nav-btn:hover { border-color: var(--border2); color: var(--text); }
+        .btn-icon {
+            width: 32px; height: 32px;
+            background: var(--surface2); border: 1px solid var(--border);
+            border-radius: 8px; cursor: pointer; color: var(--text2);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 0.82rem; transition: all 0.18s;
+        }
+        .btn-icon:hover { background: var(--border); color: var(--text); }
+
+        /* LAYOUT */
+        .page { max-width: 1100px; margin: 0 auto; padding: 2.5rem 2rem 5rem; }
+
+        .page-header { margin-bottom: 2rem; }
+        .page-eyebrow {
+            font-size: 0.7rem; font-weight: 700; text-transform: uppercase;
+            letter-spacing: 0.1em; color: var(--text3); margin-bottom: 6px;
+        }
+        .page-title {
+            font-family: 'Bricolage Grotesque', sans-serif;
+            font-size: 1.8rem; font-weight: 800; letter-spacing: -0.03em;
+            display: flex; align-items: center; gap: 12px;
+        }
+        .page-subtitle { font-size: 0.88rem; color: var(--text2); margin-top: 6px; }
+
+        /* STATS BAR */
+        .stats-bar {
+            display: flex; gap: 1rem; margin-bottom: 2rem; flex-wrap: wrap;
+        }
+        .stat-pill {
+            display: flex; align-items: center; gap: 8px;
+            background: var(--surface); border: 1px solid var(--border);
+            border-radius: 10px; padding: 10px 16px;
+            font-size: 0.82rem;
+        }
+        .stat-pill i { color: var(--accent); }
+        .stat-num { font-weight: 700; font-size: 1rem; color: var(--text); }
+
+        /* TOOLBAR */
+        .toolbar {
+            display: flex; align-items: center; gap: 10px;
+            margin-bottom: 1.5rem; flex-wrap: wrap;
+        }
+        .search-input {
+            flex: 1; min-width: 200px;
+            border: 1px solid var(--border); background: var(--surface2);
+            border-radius: 10px; padding: 8px 14px;
+            font-size: 0.84rem; color: var(--text); outline: none;
+            font-family: 'DM Sans', sans-serif; transition: border-color 0.2s;
+        }
+        .search-input:focus { border-color: var(--accent); }
+        .tb-btn {
+            display: flex; align-items: center; gap: 7px;
+            border: 1px solid var(--border); background: var(--surface2);
+            border-radius: 10px; padding: 8px 14px;
+            font-size: 0.82rem; font-weight: 600; color: var(--text2);
+            cursor: pointer; transition: all 0.16s;
+            font-family: 'DM Sans', sans-serif;
+        }
+        .tb-btn:hover { border-color: var(--border2); color: var(--text); }
+        .tb-btn.danger { color: var(--red); }
+        .tb-btn.danger:hover { background: var(--redbg); border-color: rgba(224,49,49,0.3); }
+
+        /* GRID */
+        .history-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 1rem;
+        }
+
+        /* CARD */
+        .history-card {
+            background: var(--surface); border: 1px solid var(--border);
+            border-radius: 16px; padding: 1.3rem 1.5rem;
+            cursor: pointer; transition: all 0.2s;
+            position: relative; overflow: hidden;
+        }
+        .history-card::before {
+            content: ''; position: absolute; top: 0; left: 0;
+            width: 3px; height: 100%;
+            background: var(--accent); opacity: 0;
+            transition: opacity 0.2s;
+        }
+        .history-card:hover { border-color: var(--border2); box-shadow: var(--shadow); transform: translateY(-2px); }
+        .history-card:hover::before { opacity: 1; }
+
+        .card-date {
+            font-size: 0.72rem; color: var(--text3); font-weight: 600;
+            text-transform: uppercase; letter-spacing: 0.06em;
+            margin-bottom: 0.5rem;
+            display: flex; align-items: center; gap: 6px;
+        }
+        .card-preview {
+            font-family: 'Bricolage Grotesque', sans-serif;
+            font-size: 0.95rem; font-weight: 600;
+            color: var(--text); line-height: 1.35;
+            margin-bottom: 0.75rem;
+            display: -webkit-box; 
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical; 
+            overflow: hidden;
+            line-clamp: 2;
+        }
+        .card-snippet {
+            font-size: 0.79rem; 
+            color: var(--text3);
+            line-height: 1.5;
+            display: -webkit-box; 
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical; 
+            overflow: hidden;
+            margin-bottom: 1rem;
+            line-clamp: 3;
+        }
+        .card-actions {
+            display: flex; gap: 7px;
+        }
+        .card-action {
+            display: flex; align-items: center; gap: 5px;
+            border: 1px solid var(--border); background: var(--surface2);
+            border-radius: 8px; padding: 5px 10px;
+            font-size: 0.76rem; font-weight: 600; color: var(--text2);
+            cursor: pointer; transition: all 0.15s;
+            font-family: 'DM Sans', sans-serif;
+        }
+        .card-action:hover { border-color: var(--border2); color: var(--text); }
+        .card-action.primary {
+            background: var(--accent); color: white; border-color: transparent;
+        }
+        .card-action.primary:hover { opacity: 0.85; }
+        .card-action.del { color: var(--red); }
+        .card-action.del:hover { background: var(--redbg); border-color: rgba(224,49,49,0.3); }
+
+        /* EMPTY STATE */
+        .empty-state {
+            text-align: center; padding: 5rem 2rem;
+            grid-column: 1 / -1;
+        }
+        .empty-icon {
+            font-size: 3.5rem; opacity: 0.15;
+            margin-bottom: 1.5rem; display: block;
+        }
+        .empty-state h3 {
+            font-family: 'Bricolage Grotesque', sans-serif;
+            font-size: 1.3rem; font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+        .empty-state p { font-size: 0.88rem; color: var(--text2); margin-bottom: 1.5rem; }
+        .btn-cta {
+            display: inline-flex; align-items: center; gap: 8px;
+            background: var(--accent); color: white; border: none;
+            border-radius: 10px; padding: 10px 24px;
+            font-size: 0.88rem; font-weight: 600;
+            cursor: pointer; text-decoration: none;
+            font-family: 'DM Sans', sans-serif;
+            transition: all 0.2s;
+        }
+        .btn-cta:hover { opacity: 0.88; transform: translateY(-1px); }
+
+        /* MODAL — PREVIEW */
+        .modal-overlay {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.55);
+            backdrop-filter: blur(8px);
+            z-index: 500; display: flex; align-items: center; justify-content: center;
+            opacity: 0; pointer-events: none;
+            transition: opacity 0.25s;
+        }
+        .modal-overlay.show { opacity: 1; pointer-events: all; }
+        .preview-modal {
+            background: var(--surface); border: 1px solid var(--border);
+            border-radius: 20px;
+            width: min(780px, 95vw); max-height: 85vh;
+            display: flex; flex-direction: column;
+            box-shadow: var(--shadow2);
+            transform: scale(0.95) translateY(16px);
+            transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1);
+        }
+        .modal-overlay.show .preview-modal { transform: scale(1) translateY(0); }
+
+        .modal-head {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 1.2rem 1.5rem;
+            border-bottom: 1px solid var(--border);
+            flex-shrink: 0;
+        }
+        .modal-head-title {
+            font-family: 'Bricolage Grotesque', sans-serif;
+            font-size: 1rem; font-weight: 700;
+        }
+        .modal-head-sub { font-size: 0.76rem; color: var(--text3); margin-top: 2px; }
+        .modal-head-right { display: flex; gap: 8px; align-items: center; }
+        .modal-head-btn {
+            display: flex; align-items: center; gap: 6px;
+            border: 1px solid var(--border); background: var(--surface2);
+            border-radius: 9px; padding: 6px 12px;
+            font-size: 0.78rem; font-weight: 600; color: var(--text2);
+            cursor: pointer; transition: all 0.15s;
+            font-family: 'DM Sans', sans-serif;
+            text-decoration: none;
+        }
+        .modal-head-btn:hover { border-color: var(--border2); color: var(--text); }
+        .modal-head-btn.accent { background: var(--accent); color: white; border-color: transparent; }
+        .modal-head-btn.accent:hover { opacity: 0.85; }
+        .modal-close {
+            background: var(--surface2); border: 1px solid var(--border);
+            width: 30px; height: 30px; border-radius: 8px;
+            cursor: pointer; color: var(--text3);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 0.8rem; transition: all 0.16s;
+        }
+        .modal-close:hover { background: var(--border); color: var(--text); }
+
+        .modal-body {
+            flex: 1; overflow-y: auto;
+            padding: 1.5rem 2rem;
+        }
+
+        /* Notes rendering inside modal */
+        .notes-preview { font-family: 'DM Sans', sans-serif; line-height: 1.8; font-size: 0.9rem; color: var(--text2); }
+        .notes-preview h1 {
+            font-family: 'Bricolage Grotesque', sans-serif;
+            font-size: 1.4rem; font-weight: 800; color: var(--text);
+            border-bottom: 2px solid var(--border2);
+            padding-bottom: 0.5rem; margin: 1.2rem 0 0.7rem;
+        }
+        .notes-preview h2 {
+            font-family: 'Bricolage Grotesque', sans-serif;
+            font-size: 1.05rem; font-weight: 700; color: var(--text);
+            border-left: 3px solid var(--accent);
+            padding: 0.3rem 0.7rem;
+            margin: 1.4rem 0 0.6rem;
+            background: var(--accentbg); border-radius: 0 8px 8px 0;
+        }
+        .notes-preview h3 {
+            font-size: 0.95rem; font-weight: 700; color: var(--text);
+            margin: 1rem 0 0.35rem;
+        }
+        .notes-preview h3::before { content: '▸ '; color: var(--accent2); }
+        .notes-preview p { margin-bottom: 0.75rem; }
+        .notes-preview strong {
+            color: var(--text); font-weight: 600;
+            background: var(--accentbg); padding: 1px 3px; border-radius: 3px;
+        }
+        .notes-preview ul, .notes-preview ol { padding-left: 1.4rem; margin: 0.4rem 0 0.8rem; }
+        .notes-preview li { margin: 0.3rem 0; }
+        .notes-preview li::marker { color: var(--accent); }
+        .notes-preview table {
+            width: 100%; border-collapse: collapse;
+            margin: 1rem 0; font-size: 0.83rem;
+            border-radius: 10px; overflow: hidden;
+        }
+        .notes-preview th {
+            background: var(--text); color: var(--bg);
+            padding: 0.55rem 0.9rem; text-align: left;
+            font-weight: 600; font-size: 0.77rem;
+        }
+        .notes-preview td { padding: 0.5rem 0.9rem; border-bottom: 1px solid var(--border); }
+        .notes-preview tr:nth-child(even) td { background: var(--surface2); }
+        .notes-preview code {
+            background: var(--surface2); color: var(--accent2);
+            padding: 1px 5px; border-radius: 4px;
+            font-size: 0.83em; font-family: monospace;
+        }
+        .notes-preview pre {
+            background: var(--surface2); border: 1px solid var(--border);
+            border-radius: 9px; padding: 1rem;
+            overflow-x: auto; margin: 0.8rem 0;
+        }
+        .notes-preview pre code { background: none; padding: 0; }
+        /* Hide mermaid in preview (optional, can be enabled) */
+        .notes-preview .mermaid-container,
+        .notes-preview pre:has(code.language-mermaid) {
+            display: none;
+        }
+
+        /* TOAST */
+        .toast {
+            position: fixed; bottom: 1.5rem; right: 1.5rem;
+            background: var(--surface); border: 1px solid var(--border);
+            border-radius: 12px; padding: 0.8rem 1.2rem;
+            font-size: 0.84rem; font-weight: 500;
+            display: flex; align-items: center; gap: 9px;
+            box-shadow: var(--shadow2);
+            transform: translateY(80px); opacity: 0;
+            transition: all 0.35s cubic-bezier(0.34,1.56,0.64,1);
+            z-index: 999; max-width: 300px;
+        }
+        .toast.show { transform: translateY(0); opacity: 1; }
+        .toast.success i { color: var(--green); }
+        .toast.error i { color: var(--red); }
+
+        @media (max-width: 640px) {
+            .page { padding: 1.5rem 1rem 4rem; }
+            .history-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+<nav class="nav">
+    <a class="nav-logo" href="/">
+        <div class="nav-logo-icon"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
+        SmartNotes
+    </a>
+    <div class="nav-sep"></div>
+    <div class="nav-crumb">Study History</div>
+    <div class="nav-right">
+        <a href="/notes" class="nav-btn"><i class="fa-solid fa-file-lines"></i> Current Notes</a>
+        <a href="/" class="nav-btn accent" style="background:var(--accent);color:white;border-color:transparent">
+            <i class="fa-solid fa-plus"></i> New Session
+        </a>
+        <button class="btn-icon" id="theme-toggle" title="Toggle theme">
+            <i class="fa-solid fa-moon" id="theme-icon"></i>
+        </button>
+    </div>
+</nav>
+
+<div class="page">
+
+    <div class="page-header">
+        <div class="page-eyebrow">Your Learning Archive</div>
+        <div class="page-title">
+            <i class="fa-solid fa-clock-rotate-left" style="color:var(--accent);font-size:1.4rem"></i>
+            Study History
+        </div>
+        <div class="page-subtitle">All your previously generated notes — revisit, review, and re-study.</div>
+    </div>
+
+    <div class="stats-bar" id="stats-bar"></div>
+
+    <div class="toolbar">
+        <input type="text" class="search-input" id="search-input"
+               placeholder="🔍  Search topics, keywords…"
+               oninput="renderHistory()">
+        <button class="tb-btn" onclick="sortHistory()">
+            <i class="fa-solid fa-arrow-down-wide-short"></i>
+            <span id="sort-label">Newest First</span>
+        </button>
+        <button class="tb-btn danger" onclick="clearAll()">
+            <i class="fa-solid fa-trash"></i> Clear All
+        </button>
+    </div>
+
+    <div class="history-grid" id="history-grid">
+        <!-- Cards rendered by JS -->
+    </div>
+
+</div>
+
+<!-- PREVIEW MODAL -->
+<div class="modal-overlay" id="preview-modal" onclick="closeModal(event)">
+    <div class="preview-modal">
+        <div class="modal-head">
+            <div>
+                <div class="modal-head-title" id="modal-title">Notes Preview</div>
+                <div class="modal-head-sub" id="modal-date"></div>
+            </div>
+            <div class="modal-head-right">
+                <button class="modal-head-btn" onclick="copyFromModal()">
+                    <i class="fa-solid fa-copy"></i> Copy
+                </button>
+                <button class="modal-head-btn accent" onclick="loadIntoSession()">
+                    <i class="fa-solid fa-wand-magic-sparkles"></i> Load & Study
+                </button>
+                <button class="modal-close" onclick="closeModal(true)">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+        </div>
+        <div class="modal-body">
+            <div class="notes-preview" id="modal-content"></div>
+        </div>
+    </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast">
+    <i class="fa-solid fa-circle-check" id="toast-icon"></i>
+    <span id="toast-msg"></span>
+</div>
+
+<script>
+/* ── THEME ── */
+const html = document.documentElement;
+let theme = localStorage.getItem('sn-theme') || 'light';
+function applyTheme(t) {
+    html.setAttribute('data-theme', t);
+    document.getElementById('theme-icon').className = t === 'dark' ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
+    localStorage.setItem('sn-theme', t);
+}
+applyTheme(theme);
+document.getElementById('theme-toggle').onclick = () => {
+    theme = theme === 'light' ? 'dark' : 'light';
+    applyTheme(theme);
+};
+
+/* ── TOAST ── */
+function showToast(msg, type='success') {
+    const t = document.getElementById('toast');
+    const icon = document.getElementById('toast-icon');
+    document.getElementById('toast-msg').textContent = msg;
+    t.className = 'toast show ' + type;
+    icon.className = type === 'error' ? 'fa-solid fa-circle-xmark' : 'fa-solid fa-circle-check';
+    clearTimeout(window._t);
+    window._t = setTimeout(() => t.classList.remove('show'), 3500);
+}
+
+/* ── STORAGE ── */
+const HISTORY_KEY = 'sn_history';
+
+function getHistory() {
+    try { return JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]'); }
+    catch(e) { return []; }
+}
+
+function saveHistory(arr) {
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(arr));
+}
+
+/* ── SORT STATE ── */
+let sortDesc = true;
+
+function sortHistory() {
+    sortDesc = !sortDesc;
+    document.getElementById('sort-label').textContent = sortDesc ? 'Newest First' : 'Oldest First';
+    renderHistory();
+}
+
+/* ── STATS ── */
+function renderStats(items) {
+    const bar = document.getElementById('stats-bar');
+    const total = items.length;
+    const today = items.filter(e => new Date(e.id).toDateString() === new Date().toDateString()).length;
+    const totalWords = items.reduce((acc, e) => acc + (e.raw || '').split(/\s+/).length, 0);
+
+    bar.innerHTML = `
+        <div class="stat-pill">
+            <i class="fa-solid fa-book-open"></i>
+            <span class="stat-num">${total}</span>
+            <span style="color:var(--text2)">Sessions saved</span>
+        </div>
+        <div class="stat-pill">
+            <i class="fa-solid fa-calendar-day"></i>
+            <span class="stat-num">${today}</span>
+            <span style="color:var(--text2)">Today</span>
+        </div>
+        <div class="stat-pill">
+            <i class="fa-solid fa-align-left"></i>
+            <span class="stat-num">${(totalWords/1000).toFixed(1)}k</span>
+            <span style="color:var(--text2)">Total words</span>
+        </div>
+    `;
+}
+
+/* ── RENDER ── */
+function renderHistory() {
+    const grid = document.getElementById('history-grid');
+    const query = document.getElementById('search-input').value.toLowerCase().trim();
+    let items = getHistory();
+
+    if (query) {
+        items = items.filter(e =>
+            (e.preview||'').toLowerCase().includes(query) ||
+            (e.raw||'').toLowerCase().includes(query)
+        );
+    }
+
+    items = [...items].sort((a, b) => sortDesc ? b.id - a.id : a.id - b.id);
+    renderStats(getHistory()); // stats always on full list
+
+    if (items.length === 0) {
+        grid.innerHTML = `
+            <div class="empty-state">
+                <i class="fa-solid fa-inbox empty-icon"></i>
+                <h3>${query ? 'No results found' : 'No history yet'}</h3>
+                <p>${query ? 'Try a different search term.' : 'Generate notes from a YouTube video and they\'ll automatically be saved here.'}</p>
+                ${!query ? `<a href="/" class="btn-cta"><i class="fa-solid fa-wand-magic-sparkles"></i> Generate Your First Notes</a>` : ''}
+            </div>`;
+        return;
+    }
+
+    grid.innerHTML = items.map(entry => `
+        <div class="history-card" onclick="openPreview('${entry.id}')">
+            <div class="card-date">
+                <i class="fa-regular fa-clock"></i>
+                ${entry.date} · ${entry.time}
+            </div>
+            <div class="card-preview">${sanitize(cleanPreview(entry.preview))}</div>
+            <div class="card-snippet">${sanitize(getSnippet(entry.raw))}</div>
+            <div class="card-actions" onclick="event.stopPropagation()">
+                <button class="card-action primary" onclick="openPreview('${entry.id}')">
+                    <i class="fa-solid fa-eye"></i> Preview
+                </button>
+                <button class="card-action" onclick="copyEntry('${entry.id}')">
+                    <i class="fa-solid fa-copy"></i> Copy
+                </button>
+                <button class="card-action del" onclick="deleteEntry('${entry.id}')">
+                    <i class="fa-solid fa-trash"></i>
+                </button>
+            </div>
+        </div>
+    `).join('');
+}
+
+function sanitize(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function cleanPreview(raw) {
+    if (!raw) return 'Untitled notes';
+    return raw.replace(/^#+\s*/,'').replace(/\*\*/g,'').replace(/\*/g,'').trim() || 'Untitled notes';
+}
+
+function getSnippet(raw) {
+    if (!raw) return '';
+    const lines = raw.split('\n')
+        .map(l => l.trim())
+        .filter(l => l && !l.startsWith('#') && !l.startsWith('```') && !l.startsWith('|') && !l.startsWith('-'));
+    return lines.slice(0, 3).join(' ').substring(0, 180);
+}
+
+/* ── PREVIEW MODAL ── */
+let activeId = null;
+
+function openPreview(id) {
+    const entry = getHistory().find(e => String(e.id) === String(id));
+    if (!entry) return;
+    activeId = id;
+    document.getElementById('modal-title').textContent = cleanPreview(entry.preview);
+    document.getElementById('modal-date').textContent = `Saved ${entry.date} at ${entry.time}`;
+
+    // Render markdown (strip mermaid for preview simplicity)
+    const safeRaw = (entry.raw || '').replace(/```mermaid[\s\S]*?```/g, '');
+    document.getElementById('modal-content').innerHTML = marked.parse(safeRaw);
+
+    document.getElementById('preview-modal').classList.add('show');
+    document.body.style.overflow = 'hidden';
+}
+
+function closeModal(force) {
+    if (force === true || force.target === document.getElementById('preview-modal')) {
+        document.getElementById('preview-modal').classList.remove('show');
+        document.body.style.overflow = '';
+        activeId = null;
+    }
+}
+
+/* ── LOAD INTO SESSION ── */
+async function loadIntoSession() {
+    const entry = getHistory().find(e => String(e.id) === String(activeId));
+    if (!entry) return;
+    try {
+        // POST to a helper endpoint that loads raw notes into session
+        const res = await fetch('/load_from_history', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ notes_raw: entry.raw })
+        });
+        if (res.ok) {
+            showToast('Notes loaded! Redirecting…', 'success');
+            setTimeout(() => { window.location.href = '/notes'; }, 1200);
+        } else {
+            showToast('Could not load into session.', 'error');
+        }
+    } catch(e) {
+        showToast('Connection error.', 'error');
+    }
+}
+
+/* ── ACTIONS ── */
+function copyEntry(id) {
+    const entry = getHistory().find(e => String(e.id) === String(id));
+    if (!entry) return;
+    navigator.clipboard.writeText(entry.raw || '').then(() => {
+        showToast('Notes copied to clipboard!', 'success');
+    }).catch(() => showToast('Copy failed.', 'error'));
+}
+
+function copyFromModal() {
+    if (!activeId) return;
+    copyEntry(activeId);
+}
+
+function deleteEntry(id) {
+    const items = getHistory().filter(e => String(e.id) !== String(id));
+    saveHistory(items);
+    renderHistory();
+    showToast('Entry deleted.', 'success');
+}
+
+function clearAll() {
+    if (!confirm('Delete all history? This cannot be undone.')) return;
+    localStorage.removeItem(HISTORY_KEY);
+    renderHistory();
+    showToast('History cleared.', 'success');
+}
+
+/* ── INIT ── */
+renderHistory();
+</script>
+</body>
+</html>

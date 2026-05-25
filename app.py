@@ -1,0 +1,398 @@
+import os
+import re
+from flask import (Flask, render_template, request, jsonify, session, send_file, redirect, url_for)
+from dotenv import load_dotenv
+load_dotenv()
+
+app = Flask(__name__)
+app.secret_key = os.getenv("FLASK_SECRET_KEY", "smartnotes_secret_key_2024")
+
+from flask_session import Session
+
+app.config['SESSION_TYPE'] = 'filesystem'
+app.config['SESSION_FILE_DIR'] = os.path.join(os.path.dirname(__file__), 'flask_session_data')  # ← set FIRST
+app.config['SESSION_PERMANENT'] = False
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
+os.makedirs(app.config['SESSION_FILE_DIR'], exist_ok=True)  # ← then makedirs
+Session(app)
+
+def get_gemini_client():
+    from google import genai
+    from modules.gemini_client import VALID_KEYS
+    import random
+    key = random.choice(VALID_KEYS)
+    return genai.Client(api_key=key)
+
+
+def extract_video_id(url):
+    regex = r"(?:v=|\/)([0-9A-Za-z_-]{11}).*"
+    match = re.search(regex, url)
+    return match.group(1) if match else None
+
+
+@app.route('/')
+def index():
+    return render_template('index.html')
+
+def is_video_educational(video_id, transcript_snippet):
+    """The AI Gatekeeper logic"""
+    from modules.gemini_client import get_client
+
+    # Check 1: Expanded keyword list — covers Hindi/Urdu/regional content too
+    forbidden_words = [
+        'song', 'official video', 'lyrics', 'music video', 'audio',
+        'full video', 'sad song', 'love song', 'romantic', 'lofi',
+        'gaana', 'gana', 'filmi', 'bollywood', 'kollywood', 'tollywood',
+        'lyrical video', 'feat.', 'ft.', 'album', 'single', 'track',
+        'subscribe for more songs', 'like share','nursery rhyme', 'nursery rhymes', 
+        'wheels on the bus', 'baby shark',
+        'kids song', 'children song', 'rhyme', 'lullaby', 'cartoon',
+        'cocomelon', 'bounce patrol', 'little baby bum', 'sing along',
+        'for kids', 'for babies', 'for children', 'bedtime song',
+        'bhajan', 'bhajans', 'aarti', 'kirtan', 'mantra', 'chalisa',
+        'hanuman chalisa', 'durga', 'ganesh', 'shiva', 'krishna bhajan',
+        'mata ki', 'jai mata', 'devotional', 'devotional song',
+        'prayer song', 'religious song', 'pooja', 'stuti', 'stotra',
+        'ambe tu hai', 'jai shri', 'om jai', 'ram bhajan','bhajan', 'bhajans', 'aarti', 'kirtan', 'mantra', 'chalisa',
+        'hanuman chalisa', 'durga', 'ganesh', 'shiva', 'krishna bhajan',
+        'mata ki', 'jai mata', 'devotional', 'devotional song',
+        'prayer song', 'religious song', 'pooja', 'stuti', 'stotra',
+        'ambe tu hai', 'jai shri', 'om jai', 'ram bhajan',
+    ]
+    if any(word in transcript_snippet.lower() for word in forbidden_words):
+        return False, "SmartNotes only works with educational content like lectures, tutorials, and documentaries — not songs or entertainment videos."
+
+    # Check 2: Stronger AI prompt with more context + explicit Hindi awareness
+    client = get_client()
+    prompt = f"""You are a strict content classifier for an educational notes app.
+
+Your job: decide if this YouTube transcript is from EDUCATIONAL content or NOT.
+
+EDUCATIONAL = lecture, tutorial, documentary, news report, explainer, how-to guide, course, interview about a topic.
+NOT EDUCATIONAL = song, music video, nursery rhyme, kids rhyme, baby poem, movie scene,
+film dialogue, entertainment show, sports commentary, prank, vlog, reaction video,
+poem, chant, repetitive lyrics, children's content, bhajan, aarti, kirtan, mantra,
+devotional song, religious chant, prayer, qawwali, gospel song, hymn, spiritual song,
+any content that is primarily music or singing regardless of language or religion.
+
+IMPORTANT: If the text looks like song lyrics or film dialogue (even in Hindi, Urdu, or any other language), classify it as NOT EDUCATIONAL.
+
+Transcript sample:
+\"\"\"
+{transcript_snippet[:2000]}
+\"\"\"
+
+Reply with ONLY one word: VALID or INVALID."""
+
+    try:
+        response = client.models.generate_content(model="gemini-2.0-flash-lite", contents=prompt)
+        decision = response.text.strip().upper()
+        is_valid = "VALID" in decision and "INVALID" not in decision
+        return is_valid, "SmartNotes only works with educational content like lectures, tutorials, and documentaries — not songs or entertainment videos."
+    except:
+        return True, ""
+    
+@app.route('/generate', methods=['POST'])
+def generate():
+    video_url = request.form.get('video_url', '').strip()
+    video_id = extract_video_id(video_url)
+    if not video_id:
+        return jsonify({"error": "Invalid YouTube URL."}), 400
+
+    try:
+        from modules.yt_transcript import get_transcript
+        transcript = get_transcript(video_id)
+        
+        if not transcript:
+            return jsonify({"error": "No transcript found."}), 404
+
+        # 🛑 ADDED GATEKEEPER CHECK HERE 🛑
+        # We pass the first 1200 characters to the AI to decide if it's study material
+        is_valid, error_msg = is_video_educational(video_id, transcript[:2000])
+        
+        if not is_valid:
+            # This stops the process and returns the error to your frontend
+            return jsonify({"success": False, "error": error_msg}), 400
+
+        # If it passes the check, then we proceed to make notes
+        from modules.summarizer import generate_structured_notes
+        notes_html, notes_raw = generate_structured_notes(transcript)
+        
+        if notes_html.startswith("Error:"):
+            return jsonify({"error": notes_html}), 503
+            
+        session['notes_html'] = notes_html
+        session['notes_raw'] = notes_raw
+        session['video_id'] = video_id
+        session.modified = True
+        return jsonify({"success": True})
+
+    except Exception as e:
+        import traceback
+        return jsonify({"error": traceback.format_exc()}), 500
+
+@app.route('/notes')
+def notes_page():
+    if not session.get('notes_html'):
+        return redirect(url_for('index'))
+    # Pass notes directly into template — no separate API call needed
+    return render_template('notes.html',
+        notes_html=session.get('notes_html', ''),
+        notes_raw=session.get('notes_raw', '')
+    )
+
+
+@app.route('/api/notes')
+def api_notes():
+    return jsonify({
+        "notes": session.get('notes_html', ''),
+        "notes_raw": session.get('notes_raw', '')
+    })
+
+@app.route('/debug/session')
+def debug_session():
+    return jsonify({
+        "has_notes_raw": bool(session.get('notes_raw')),
+        "notes_raw_len": len(session.get('notes_raw', '')),
+        "has_notes_html": bool(session.get('notes_html')),
+        "notes_html_len": len(session.get('notes_html', '')),
+    })
+
+@app.route('/translate', methods=['POST'])
+def handle_translation():
+    target_lang = request.form.get("language", "hindi")
+    notes_raw = session.get('notes_raw', '')
+
+    if not notes_raw:
+        return jsonify({"error": "Session expired. Please go back and generate notes again."}), 400
+
+    notes_trimmed = notes_raw[:12000]
+
+    prompt = (
+        f"Translate the following Markdown study notes to {target_lang}.\n\n"
+        f"STRICT RULES:\n"
+        f"1. Translate ONLY human-readable text.\n"
+        f"2. Keep ALL Markdown syntax untouched: ##, ###, **, -, tables.\n"
+        f"3. Keep ALL ```mermaid``` blocks EXACTLY as-is.\n"
+        f"4. Output ONLY the translated Markdown. No explanation.\n\n"
+        f"NOTES:\n{notes_trimmed}"
+    )
+
+    from google import genai
+    from modules.gemini_client import VALID_KEYS, MODELS
+    from modules.summarizer import convert_to_html
+    import time
+
+    last_error = "All API keys exhausted."
+
+    for api_key in VALID_KEYS:
+        client = genai.Client(api_key=api_key)
+        for model in MODELS:
+            try:
+                response = client.models.generate_content(
+                    model=model, contents=prompt
+                )
+                translated_raw = response.text.strip()
+                if not translated_raw:
+                    continue
+                translated_html = convert_to_html(translated_raw)
+                session['notes_html'] = translated_html
+                session['notes_raw'] = translated_raw
+                session.modified = True        # ← force session save
+                return jsonify({"notes": translated_html, "success": True})
+            except Exception as e:
+                err = str(e)
+                last_error = err
+                if "429" in err or "503" in err:
+                    time.sleep(2)
+                    continue
+                elif "404" in err:
+                    break
+                else:
+                    time.sleep(1)
+                    continue
+
+    return jsonify({"error": f"Translation failed: {last_error}"}), 500
+
+@app.route('/chat', methods=['POST'])
+def chat():
+    data = request.json
+    user_query = data.get("message")
+    notes_context = session.get('notes_raw', "")[:5000]
+
+    prompt = (
+    f"You are a study assistant for SmartNotes AI. "
+    f"Answer ONLY based on the notes below. If the question is unrelated, "
+    f"say: 'This question is outside the scope of these notes.'\n\n"
+    f"NOTES:\n{notes_context}\n\nSTUDENT QUESTION: {user_query}"
+)
+
+    from modules.summarizer import VALID_KEYS, MODELS
+    from google import genai
+    import time
+
+    for key_index, api_key in enumerate(VALID_KEYS):
+        client = genai.Client(api_key=api_key)
+        for model in MODELS:
+            try:
+                response = client.models.generate_content(model=model, contents=prompt)
+                return jsonify({"response": response.text})
+            except Exception as e:
+                if "429" in str(e) or "RESOURCE_EXHAUSTED" in str(e):
+                    time.sleep(2)
+                    continue
+                elif "404" in str(e):
+                    break
+                else:
+                    continue
+
+    return jsonify({"response": "All AI keys are at limit. Try again in a minute."}), 503
+
+
+@app.route('/debug/gemini')
+def debug_gemini():
+    from google import genai
+    from modules.gemini_client import VALID_KEYS, MODELS
+    results = []
+    for i, key in enumerate(VALID_KEYS):
+        try:
+            client = genai.Client(api_key=key)
+            r = client.models.generate_content(
+                model=MODELS[0],
+                contents="Reply with just the word: OK"
+            )
+            results.append(f"Key {i+1}: ✅ {r.text.strip()}")
+        except Exception as e:
+            results.append(f"Key {i+1}: ❌ {str(e)[:120]}")
+    return "<br>".join(results)
+
+@app.route('/quiz')
+def quiz_page():
+    if not session.get('notes_raw'):
+        return redirect(url_for('index'))
+    return render_template('quiz.html')  # render immediately, load quiz via JS
+
+
+@app.route('/api/quiz')
+def api_quiz():
+    notes_raw = session.get('notes_raw', '')
+    if not notes_raw:
+        return jsonify({"error": "No notes found. Please generate notes first."}), 400
+    try:
+        from modules.quiz_generator import generate_quiz
+        quiz_data = generate_quiz(notes_raw)
+        if not quiz_data:
+            return jsonify({"error": "Quiz generation failed. Please try again."}), 500
+        return jsonify({"quiz": quiz_data})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500 
+
+@app.route('/questions')
+def questions_page():
+    if not session.get('notes_raw'):
+        return redirect(url_for('index'))
+    from modules.assignment_generator import generate_assignment
+    data = generate_assignment(session['notes_raw'])
+    return render_template('questions.html', data=data)
+
+
+@app.route('/export/pdf')
+def export_pdf():
+    notes_raw = session.get('notes_raw', '')
+    if not notes_raw:
+        return "No notes in session. Generate notes first, then export.", 400
+    try:
+        from modules.export_manager import generate_pdf
+        pdf_stream = generate_pdf(notes_raw)
+        return send_file(pdf_stream, download_name='smartnotes.pdf',
+                         as_attachment=True, mimetype='application/pdf')
+    except Exception as e:
+        return f"PDF generation error: {str(e)}", 500
+
+
+@app.route('/export/docx')          # ← fixed: added missing @
+def export_docx():
+    notes_raw = session.get('notes_raw', '') or session.get('notes', '')
+    if not notes_raw:
+        return "No notes in session. Generate notes first.", 400
+    try:
+        from modules.export_manager import generate_word
+        doc_stream = generate_word(notes_raw)
+        return send_file(
+            doc_stream,
+            download_name='smartnotes.docx',
+            as_attachment=True,
+            mimetype='application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+        )
+    except Exception as e:
+        import traceback
+        return f"<pre>Word error:\n{traceback.format_exc()}</pre>", 500
+
+
+@app.route('/debug/word')
+def debug_word():
+    try:
+        from modules.export_manager import generate_word
+        stream = generate_word("# Title\n## Section\n- bullet one\n- bullet two\nSome paragraph.")
+        return send_file(
+            stream,
+            download_name='test.docx',
+            as_attachment=True,
+            mimetype='application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+        )
+    except Exception as e:
+        import traceback
+        return f"<pre>{traceback.format_exc()}</pre>", 500
+
+
+@app.route('/export/ppt', methods=['POST'])
+def export_ppt():
+    # Force re-read .env on every request so key changes take effect without restart
+    load_dotenv(override=True)
+
+    notes_raw = session.get('notes_raw', '')
+    if not notes_raw:
+        return jsonify({"error": "No notes in session. Generate notes first."}), 400
+
+    api_key = os.getenv("SLIDES_API_KEY", "").strip()
+    if not api_key:
+        return jsonify({"error": "SLIDES_API_KEY missing from .env file"}), 500
+
+    # Log the key prefix so you can confirm which key is actually loaded
+    app.logger.info(f"PPT export using key: {api_key[:12]}...")
+
+    try:
+        from modules.ppt_generator import generate_ppt_from_notes
+        result = generate_ppt_from_notes(notes_raw, api_key)
+        if result.get("error"):
+            return jsonify({"error": result["error"]}), 500
+        return jsonify({"url": result["url"], "success": True})
+    except Exception as e:
+        return jsonify({"error": f"PPT error: {str(e)}"}), 500
+    
+@app.route('/load_from_history', methods=['POST'])
+def load_from_history():
+    from modules.summarizer import convert_to_html
+    data = request.json
+    raw = data.get('notes_raw', '')
+    if not raw:
+        return jsonify({"error": "No notes provided"}), 400
+    session['notes_raw'] = raw
+    session['notes_html'] = convert_to_html(raw)
+    session.modified = True
+    return jsonify({"success": True})
+
+@app.route('/reset', methods=['POST'])
+def reset_session():
+    session.clear()
+    return jsonify({"success": True})
+
+
+@app.route('/history')
+def history_page():
+    return render_template('history.html')
+
+if __name__ == '__main__':
+    os.makedirs('data', exist_ok=True)
+    os.makedirs('static/output', exist_ok=True)
+    app.run(debug=True, port=5000)

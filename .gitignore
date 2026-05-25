@@ -1,0 +1,13 @@
+venv/
+__pycache__/
+*.pyc
+.env
+ffmpeg.exe
+ffprobe.exe
+deno.exe
+static/videos/
+static/output/
+static/frames/
+flask_session_data/
+cookies.txt
+gunicorn

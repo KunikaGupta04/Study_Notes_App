@@ -1,0 +1,807 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SmartNotes AI — YouTube to Study Notes</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Clash+Display:wght@400;500;600;700&family=Instrument+Sans:wght@400;500;600&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;500;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,400&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <style>
+        /* ══════════════════════════════════════════
+           THEME TOKENS
+        ══════════════════════════════════════════ */
+        [data-theme="light"] {
+            --bg:         #fafaf8;
+            --bg2:        #f4f2ed;
+            --surface:    #ffffff;
+            --surface2:   #f7f5f0;
+            --border:     #e8e3d9;
+            --border2:    #d4cfc4;
+            --text:       #1a1814;
+            --text2:      #5c574e;
+            --text3:      #9c9589;
+            --accent:     #e8613a;
+            --accent2:    #f0945a;
+            --accentbg:   #fff3ee;
+            --blue:       #3b5bdb;
+            --bluebg:     #eef2ff;
+            --green:      #2f9e44;
+            --greenbg:    #ebfbee;
+            --purple:     #7048e8;
+            --purplebg:   #f3f0ff;
+            --shadow:     0 2px 16px rgba(26,24,20,0.08);
+            --shadow2:    0 8px 40px rgba(26,24,20,0.12);
+            --nav-bg:     rgba(250,250,248,0.88);
+            --hero-dot:   rgba(232,97,58,0.12);
+        }
+
+        [data-theme="dark"] {
+            --bg:         #111110;
+            --bg2:        #1a1917;
+            --surface:    #1e1d1b;
+            --surface2:   #252420;
+            --border:     #2e2c28;
+            --border2:    #3d3b36;
+            --text:       #f0ede8;
+            --text2:      #a09b92;
+            --text3:      #6b6660;
+            --accent:     #f07040;
+            --accent2:    #f59060;
+            --accentbg:   #2a1c14;
+            --blue:       #748ffc;
+            --bluebg:     #1a1d35;
+            --green:      #51cf66;
+            --greenbg:    #0f2414;
+            --purple:     #9775fa;
+            --purplebg:   #1c1630;
+            --shadow:     0 2px 16px rgba(0,0,0,0.4);
+            --shadow2:    0 8px 40px rgba(0,0,0,0.5);
+            --nav-bg:     rgba(17,17,16,0.88);
+            --hero-dot:   rgba(240,112,64,0.08);
+        }
+
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        html { scroll-behavior: smooth; }
+
+        body {
+            font-family: 'DM Sans', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            transition: background 0.35s, color 0.35s;
+            overflow-x: hidden;
+        }
+
+        /* ══ NOISE TEXTURE OVERLAY ══ */
+        body::before {
+            content: '';
+            position: fixed; inset: 0;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+            pointer-events: none;
+            z-index: 0;
+            opacity: 0.4;
+        }
+
+        /* ══ NAV ══ */
+        .nav {
+            position: sticky; top: 0; z-index: 100;
+            background: var(--nav-bg);
+            backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
+            border-bottom: 1px solid var(--border);
+            height: 58px;
+            display: flex; align-items: center;
+            padding: 0 2rem;
+            gap: 16px;
+        }
+
+        .nav-logo {
+            display: flex; align-items: center; gap: 10px;
+            font-family: 'Bricolage Grotesque', sans-serif;
+            font-size: 1.15rem; font-weight: 700;
+            color: var(--text); text-decoration: none;
+            letter-spacing: -0.02em;
+        }
+
+        .nav-logo-icon {
+            width: 32px; height: 32px;
+            background: var(--accent);
+            border-radius: 9px;
+            display: flex; align-items: center; justify-content: center;
+            color: white; font-size: 0.82rem;
+            box-shadow: 0 2px 8px rgba(232,97,58,0.35);
+            flex-shrink: 0;
+        }
+
+        .nav-pill {
+            background: var(--greenbg);
+            color: var(--green);
+            font-size: 0.7rem; font-weight: 600;
+            padding: 3px 9px; border-radius: 20px;
+            letter-spacing: 0.04em;
+            display: flex; align-items: center; gap: 5px;
+        }
+
+        .nav-pill .live-dot {
+            width: 5px; height: 5px;
+            background: var(--green); border-radius: 50%;
+            animation: livePulse 1.8s ease-in-out infinite;
+        }
+
+        @keyframes livePulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.4; transform: scale(0.7); }
+        }
+
+        .nav-right { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+
+        .nav-badge {
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            color: var(--text3);
+            font-size: 0.72rem; font-weight: 500;
+            padding: 4px 10px; border-radius: 20px;
+        }
+
+        .btn-theme {
+            width: 34px; height: 34px;
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            cursor: pointer; color: var(--text2);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+        }
+        .btn-theme:hover { background: var(--border2); color: var(--accent); }
+
+        /* ══ HERO ══ */
+        .hero-wrap {
+            position: relative;
+            max-width: 760px;
+            margin: 0 auto;
+            padding: 5.5rem 2rem 3rem;
+            text-align: center;
+            z-index: 1;
+        }
+
+        .hero-blob1, .hero-blob2 {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(80px);
+            pointer-events: none;
+            z-index: -1;
+        }
+        .hero-blob1 {
+            width: 400px; height: 400px;
+            background: radial-gradient(circle, rgba(232,97,58,0.14), transparent 70%);
+            top: -60px; left: 50%;
+            transform: translateX(-30%);
+        }
+        .hero-blob2 {
+            width: 300px; height: 300px;
+            background: radial-gradient(circle, rgba(59,91,219,0.1), transparent 70%);
+            top: 100px; right: -60px;
+        }
+
+        .hero-eyebrow {
+            display: inline-flex; align-items: center; gap: 8px;
+            background: var(--accentbg);
+            border: 1px solid rgba(232,97,58,0.2);
+            color: var(--accent);
+            font-size: 0.75rem; font-weight: 600;
+            padding: 5px 14px; border-radius: 20px;
+            margin-bottom: 1.6rem;
+            letter-spacing: 0.06em; text-transform: uppercase;
+            animation: fadeUp 0.6s ease both;
+        }
+
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(14px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        .hero h1 {
+            font-family: 'Bricolage Grotesque', sans-serif;
+            font-size: clamp(2.4rem, 6vw, 3.8rem);
+            font-weight: 800;
+            line-height: 1.08;
+            letter-spacing: -0.035em;
+            color: var(--text);
+            margin-bottom: 1.2rem;
+            animation: fadeUp 0.6s 0.08s ease both;
+        }
+
+        .hero h1 em {
+            font-style: normal;
+            background: linear-gradient(135deg, var(--accent), var(--accent2));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .hero h1 .underline-word {
+            position: relative;
+            font-style: normal;
+        }
+        .hero h1 .underline-word::after {
+            content: '';
+            position: absolute;
+            left: 0; bottom: -4px;
+            width: 100%; height: 3px;
+            background: var(--blue);
+            border-radius: 2px;
+        }
+
+        .hero-sub {
+            font-size: 1.05rem;
+            color: var(--text2);
+            line-height: 1.7;
+            max-width: 500px;
+            margin: 0 auto 2.5rem;
+            animation: fadeUp 0.6s 0.16s ease both;
+        }
+
+        /* ══ INPUT CARD ══ */
+        .input-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 22px;
+            padding: 1.8rem 2rem;
+            box-shadow: var(--shadow2);
+            max-width: 600px;
+            margin: 0 auto 2rem;
+            animation: fadeUp 0.6s 0.24s ease both;
+            position: relative;
+        }
+
+        .input-card::before {
+            content: '';
+            position: absolute;
+            inset: -1px;
+            border-radius: 23px;
+            background: linear-gradient(135deg, rgba(232,97,58,0.25), rgba(59,91,219,0.15), transparent 60%);
+            z-index: -1;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        .input-card:focus-within::before { opacity: 1; }
+
+        .input-hint {
+            display: flex; align-items: center; gap: 7px;
+            font-size: 0.75rem; font-weight: 600;
+            color: var(--text3); text-transform: uppercase;
+            letter-spacing: 0.08em; margin-bottom: 0.9rem;
+        }
+        .input-hint .yt-icon { color: #ff0000; font-size: 0.85rem; }
+
+        .url-row {
+            display: flex; gap: 10px;
+        }
+
+        .url-input {
+            flex: 1;
+            border: 1.5px solid var(--border);
+            border-radius: 12px;
+            padding: 0.85rem 1.1rem;
+            font-size: 0.92rem;
+            font-family: 'DM Sans', sans-serif;
+            background: var(--surface2);
+            color: var(--text);
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .url-input:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(232,97,58,0.12);
+        }
+        .url-input::placeholder { color: var(--text3); }
+
+        .btn-generate {
+            background: var(--accent);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            padding: 0 1.5rem;
+            font-size: 0.9rem; font-weight: 600;
+            font-family: 'DM Sans', sans-serif;
+            cursor: pointer;
+            display: flex; align-items: center; gap: 8px;
+            min-height: 46px;
+            white-space: nowrap;
+            transition: all 0.2s;
+            box-shadow: 0 4px 16px rgba(232,97,58,0.3);
+            position: relative;
+            overflow: hidden;
+        }
+        .btn-generate::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: rgba(255,255,255,0.1);
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+        .btn-generate:hover { transform: translateY(-1px); box-shadow: 0 6px 22px rgba(232,97,58,0.38); }
+        .btn-generate:hover::after { opacity: 1; }
+        .btn-generate:active { transform: translateY(0); }
+        .btn-generate:disabled { opacity: 0.55; cursor: not-allowed; transform: none; box-shadow: none; }
+        .btn-generate.loading .btn-text { opacity: 0; }
+        .btn-generate.loading .btn-spinner { display: flex; }
+
+        .btn-spinner {
+            display: none;
+            position: absolute;
+            left: 50%; top: 50%;
+            transform: translate(-50%, -50%);
+            width: 18px; height: 18px;
+            border: 2.5px solid rgba(255,255,255,0.4);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+        }
+        @keyframes spin { to { transform: translate(-50%, -50%) rotate(360deg); } }
+
+        /* ══ PROGRESS ══ */
+        .progress-wrap {
+            display: none;
+            margin-top: 1.2rem;
+        }
+        .progress-wrap.show { display: block; }
+
+        .progress-track {
+            height: 4px;
+            background: var(--border);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 0.7rem;
+        }
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent), var(--accent2));
+            border-radius: 4px;
+            width: 0%;
+            transition: width 0.9s cubic-bezier(0.4,0,0.2,1);
+        }
+        .progress-row {
+            display: flex; align-items: center; gap: 8px;
+            font-size: 0.78rem; color: var(--text3); font-weight: 500;
+        }
+        .progress-dot {
+            width: 6px; height: 6px;
+            background: var(--accent);
+            border-radius: 50%;
+            animation: livePulse 1.2s infinite;
+            flex-shrink: 0;
+        }
+
+        /* ══ STATS ROW ══ */
+        .stats-row {
+            display: flex; justify-content: center; align-items: center;
+            gap: 2rem;
+            max-width: 600px;
+            margin: 0 auto 3.5rem;
+            animation: fadeUp 0.6s 0.32s ease both;
+        }
+        .stat-item { text-align: center; }
+        .stat-num {
+            font-family: 'Bricolage Grotesque', sans-serif;
+            font-size: 1.5rem; font-weight: 700;
+            color: var(--text);
+            display: block;
+        }
+        .stat-label { font-size: 0.75rem; color: var(--text3); }
+        .stat-divider { width: 1px; height: 32px; background: var(--border); }
+
+        /* ══ FEATURES ══ */
+        .features-section {
+            max-width: 860px;
+            margin: 0 auto;
+            padding: 0 2rem 6rem;
+            position: relative; z-index: 1;
+        }
+
+        .section-eyebrow {
+            text-align: center;
+            font-size: 0.75rem; font-weight: 600; letter-spacing: 0.1em;
+            text-transform: uppercase; color: var(--text3);
+            margin-bottom: 0.7rem;
+        }
+        .section-title {
+            text-align: center;
+            font-family: 'Bricolage Grotesque', sans-serif;
+            font-size: clamp(1.5rem, 3vw, 2rem);
+            font-weight: 700;
+            letter-spacing: -0.025em;
+            color: var(--text);
+            margin-bottom: 2.5rem;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+        }
+
+        .feat-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 1.5rem 1.4rem;
+            transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+            cursor: default;
+        }
+        .feat-card:hover {
+            transform: translateY(-3px);
+            border-color: var(--border2);
+            box-shadow: var(--shadow);
+        }
+        .feat-icon {
+            width: 42px; height: 42px;
+            border-radius: 11px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.05rem;
+            margin-bottom: 1rem;
+        }
+        .feat-card h3 {
+            font-family: 'Bricolage Grotesque', sans-serif;
+            font-size: 0.95rem; font-weight: 700;
+            margin-bottom: 0.35rem;
+            letter-spacing: -0.01em;
+        }
+        .feat-card p { font-size: 0.82rem; color: var(--text2); line-height: 1.6; }
+
+        /* ══ LANGUAGE STRIP ══ */
+        .lang-strip {
+            background: var(--surface2);
+            border-top: 1px solid var(--border);
+            border-bottom: 1px solid var(--border);
+            padding: 1rem 2rem;
+            overflow: hidden;
+            position: relative;
+            margin-bottom: 3.5rem;
+        }
+        .lang-strip::before, .lang-strip::after {
+            content: '';
+            position: absolute; top: 0; bottom: 0; width: 80px;
+            z-index: 2;
+        }
+        .lang-strip::before { left: 0; background: linear-gradient(90deg, var(--surface2), transparent); }
+        .lang-strip::after  { right: 0; background: linear-gradient(-90deg, var(--surface2), transparent); }
+
+        .lang-ticker {
+            display: flex; gap: 1.5rem;
+            animation: ticker 24s linear infinite;
+            width: max-content;
+        }
+        @keyframes ticker { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+
+        .lang-chip {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 0.3rem 0.9rem;
+            font-size: 0.78rem; font-weight: 500;
+            color: var(--text2);
+            white-space: nowrap;
+            display: flex; align-items: center; gap: 5px;
+        }
+
+        /* ══ TOAST ══ */
+        .toast {
+            position: fixed; bottom: 1.5rem; right: 1.5rem;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 0.8rem 1.2rem;
+            font-size: 0.84rem; font-weight: 500;
+            display: flex; align-items: center; gap: 9px;
+            box-shadow: var(--shadow2);
+            transform: translateY(80px); opacity: 0;
+            transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+            z-index: 999; max-width: 300px;
+        }
+        .toast.show { transform: translateY(0); opacity: 1; }
+        .toast.error { border-color: rgba(239,68,68,0.4); }
+        .toast.error i { color: #ef4444; }
+        .toast.success { border-color: rgba(47,158,68,0.4); }
+        .toast.success i { color: var(--green); }
+
+        /* ══ RESPONSIVE ══ */
+        @media (max-width: 600px) {
+            .hero-wrap { padding: 4rem 1.2rem 2rem; }
+            .features-section { padding: 0 1.2rem 4rem; }
+            .url-row { flex-direction: column; }
+            .btn-generate { min-height: 48px; justify-content: center; }
+            .stats-row { gap: 1rem; }
+            .nav-badge { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- ══ NAV ══ -->
+<nav class="nav">
+    <a class="nav-logo" href="/">
+        <div class="nav-logo-icon"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
+        SmartNotes <span style="opacity:0.4;margin:0 2px;font-weight:300">·</span> AI
+    </a>
+    <div class="nav-pill">
+        <span class="live-dot"></span>
+        Live
+    </div>
+    <div class="nav-right">
+        <div class="nav-badge">Gemini Flash</div>
+        <a href="/history" style="display:flex;align-items:center;gap:6px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:5px 12px;font-size:0.8rem;font-weight:600;color:var(--text2);text-decoration:none;font-family:'DM Sans',sans-serif;transition:all 0.18s;" onmouseover="this.style.color='var(--text)';this.style.borderColor='var(--border2)'" onmouseout="this.style.color='var(--text2)';this.style.borderColor='var(--border)'">
+            <i class="fa-solid fa-clock-rotate-left"></i> History
+        </a>
+        <button class="btn-theme" id="theme-toggle" title="Toggle theme">
+            <i class="fa-solid fa-moon" id="theme-icon"></i>
+        </button>
+    </div>
+</nav>
+
+<!-- ══ HERO ══ -->
+<div class="hero-wrap">
+    <div class="hero-blob1"></div>
+    <div class="hero-blob2"></div>
+
+    <div class="hero-eyebrow">
+        <i class="fa-solid fa-sparkles"></i>
+        AI-Powered Study Tool
+    </div>
+
+    <h1>
+        Turn <em>YouTube</em> into<br>
+        <span class="underline-word">Perfect</span> Study Notes
+    </h1>
+
+    <p class="hero-sub">
+        Paste any educational video link. Our AI generates structured notes,
+        translates to Indian languages, builds Q&amp;A banks, and exports to PPT, PDF &amp; Word.
+    </p>
+
+    <!-- URL Input Card -->
+    <div class="input-card">
+        <div class="input-hint">
+            <i class="fa-brands fa-youtube yt-icon"></i>
+            YouTube URL
+        </div>
+        <form id="generate-form">
+            <div class="url-row">
+                <input type="text" id="video_url" class="url-input"
+                       placeholder="https://www.youtube.com/watch?v=..."
+                       autocomplete="off" autocorrect="off" spellcheck="false">
+                <button type="submit" class="btn-generate" id="gen-btn">
+                    <span class="btn-spinner"></span>
+                    <span class="btn-text"><i class="fa-solid fa-bolt"></i> Generate</span>
+                </button>
+            </div>
+            <div class="progress-wrap" id="progress-wrap">
+                <div class="progress-track">
+                    <div class="progress-fill" id="progress-fill"></div>
+                </div>
+                <div class="progress-row">
+                    <div class="progress-dot"></div>
+                    <span id="progress-text">Starting...</span>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats-row">
+        <div class="stat-item">
+            <span class="stat-num">12+</span>
+            <span class="stat-label">Languages</span>
+        </div>
+        <div class="stat-divider"></div>
+        <div class="stat-item">
+            <span class="stat-num">3</span>
+            <span class="stat-label">Export formats</span>
+        </div>
+        <div class="stat-divider"></div>
+        <div class="stat-item">
+            <span class="stat-num">~15s</span>
+            <span class="stat-label">Generation time</span>
+        </div>
+        <div class="stat-divider"></div>
+        <div class="stat-item">
+            <span class="stat-num">Free</span>
+            <span class="stat-label">No signup</span>
+        </div>
+    </div>
+</div>
+
+<!-- ══ LANGUAGE TICKER ══ -->
+<div class="lang-strip">
+    <div class="lang-ticker" id="lang-ticker">
+        <!-- duplicated for seamless loop -->
+    </div>
+</div>
+
+<!-- ══ FEATURES ══ -->
+<section class="features-section">
+    <p class="section-eyebrow">Everything you need</p>
+    <h2 class="section-title">One video. Unlimited study material.</h2>
+
+    <div class="features-grid">
+        <div class="feat-card">
+            <div class="feat-icon" style="background:var(--bluebg);color:var(--blue);">
+                <i class="fa-solid fa-brain"></i>
+            </div>
+            <h3>Structured Notes</h3>
+            <p>AI-organized notes with headings, bullet points, tables, and key concept highlights.</p>
+        </div>
+        <div class="feat-card">
+            <div class="feat-icon" style="background:var(--purplebg);color:var(--purple);">
+                <i class="fa-solid fa-language"></i>
+            </div>
+            <h3>Indian Languages</h3>
+            <p>Hindi, Bengali, Tamil, Telugu, Marathi, Gujarati, Kannada, Malayalam, and more.</p>
+        </div>
+        <div class="feat-card">
+            <div class="feat-icon" style="background:var(--accentbg);color:var(--accent);">
+                <i class="fa-solid fa-circle-question"></i>
+            </div>
+            <h3>Quiz &amp; Q&amp;A Bank</h3>
+            <p>MCQs, short-answer, and essay questions auto-generated from your content.</p>
+        </div>
+        <div class="feat-card">
+            <div class="feat-icon" style="background:var(--greenbg);color:var(--green);">
+                <i class="fa-solid fa-file-powerpoint"></i>
+            </div>
+            <h3>PPT Download</h3>
+            <p>One-click PowerPoint presentation generated from your notes via 2Slides API.</p>
+        </div>
+    </div>
+</section>
+
+<!-- ══ TOAST ══ -->
+<div class="toast" id="toast">
+    <i class="fa-solid fa-circle-info" id="toast-icon"></i>
+    <span id="toast-msg">Message</span>
+</div>
+
+<script>
+/* ── THEME ── */
+const html = document.documentElement;
+const themeIcon = document.getElementById('theme-icon');
+let theme = localStorage.getItem('sn-theme') || 'light';
+
+function applyTheme(t) {
+    html.setAttribute('data-theme', t);
+    themeIcon.className = t === 'dark' ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
+    localStorage.setItem('sn-theme', t);
+}
+applyTheme(theme);
+document.getElementById('theme-toggle').onclick = () => {
+    theme = theme === 'light' ? 'dark' : 'light';
+    applyTheme(theme);
+};
+
+/* ── LANGUAGE TICKER ── */
+const langs = [
+    { flag: '🇮🇳', name: 'Hindi' },
+    { flag: '🇮🇳', name: 'Bengali' },
+    { flag: '🇮🇳', name: 'Tamil' },
+    { flag: '🇮🇳', name: 'Telugu' },
+    { flag: '🇮🇳', name: 'Marathi' },
+    { flag: '🇮🇳', name: 'Gujarati' },
+    { flag: '🇮🇳', name: 'Kannada' },
+    { flag: '🇮🇳', name: 'Malayalam' },
+    { flag: '🇮🇳', name: 'Punjabi' },
+    { flag: '🇮🇳', name: 'Odia' },
+    { flag: '🇮🇳', name: 'Urdu' },
+    { flag: '🇬🇧', name: 'English' },
+];
+const ticker = document.getElementById('lang-ticker');
+const doubled = [...langs, ...langs];
+ticker.innerHTML = doubled.map(l =>
+    `<div class="lang-chip">${l.flag} ${l.name}</div>`
+).join('');
+
+/* ── TOAST ── */
+function showToast(msg, type = '') {
+    const t = document.getElementById('toast');
+    const icon = document.getElementById('toast-icon');
+    document.getElementById('toast-msg').textContent = msg;
+    t.className = 'toast show ' + type;
+    icon.className = type === 'error' ? 'fa-solid fa-circle-xmark' :
+                     type === 'success' ? 'fa-solid fa-circle-check' :
+                     'fa-solid fa-circle-info';
+    clearTimeout(window._toastTimer);
+    window._toastTimer = setTimeout(() => t.classList.remove('show'), 4000);
+}
+
+/* ── PROGRESS STEPS ── */
+// Two-phase steps: fast path (transcript API) and slow path (yt-dlp fallback)
+// The backend decides which runs; we just animate realistically either way.
+const steps = [
+    { text: '⚡ Fetching transcript from YouTube…',     pct: 20 },
+    { text: '📖 Reading video content…',                pct: 38 },
+    { text: '🤖 AI is analyzing the content…',          pct: 55 },
+    { text: '✍️ Structuring your study notes…',         pct: 70 },
+    { text: '📊 Building diagrams & tables…',           pct: 82 },
+    { text: '🎨 Applying final formatting…',            pct: 91 },
+    { text: '⏳ Almost there, just a moment…',          pct: 96 },
+];
+
+function startProgress() {
+    const wrap = document.getElementById('progress-wrap');
+    const fill = document.getElementById('progress-fill');
+    const label = document.getElementById('progress-text');
+    wrap.classList.add('show');
+    fill.style.width = '5%';
+    label.textContent = steps[0].text;
+
+    let i = 0;
+    // First 3 steps run fast (2s each) — covers quick transcript API path
+    // Later steps run slower (3.5s each) — covers AI generation time
+    function advance() {
+        i++;
+        if (i >= steps.length) return; // stop at last step, wait for server
+        fill.style.width = steps[i].pct + '%';
+        label.textContent = steps[i].text;
+        const delay = i < 3 ? 2000 : 3500;
+        window._progressTimer = setTimeout(advance, delay);
+    }
+    window._progressTimer = setTimeout(advance, 1800);
+}
+
+function stopProgress() {
+    clearTimeout(window._progressTimer);
+}
+
+/* ── GENERATE ── */
+document.getElementById('generate-form').onsubmit = async (e) => {
+    e.preventDefault();
+    const url = document.getElementById('video_url').value.trim();
+    if (!url) { showToast('Please paste a YouTube URL first.', 'error'); return; }
+    if (!url.includes('youtube.com') && !url.includes('youtu.be')) {
+        showToast('Looks like that\'s not a YouTube URL.', 'error'); return;
+    }
+
+    const btn = document.getElementById('gen-btn');
+    btn.disabled = true;
+    btn.classList.add('loading');
+    startProgress();
+
+    try {
+        const res = await fetch('/generate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: `video_url=${encodeURIComponent(url)}`
+        });
+        const data = await res.json();
+        stopProgress();
+
+        if (data.success) {
+            document.getElementById('progress-fill').style.width = '100%';
+            document.getElementById('progress-text').textContent = '✅ Done! Opening your notes…';
+            showToast('Notes generated!', 'success');
+            setTimeout(() => window.location.href = '/notes', 700);
+        } else {
+            showToast(data.error || 'Generation failed.', 'error');
+            resetUI();
+        }
+    } catch (err) {
+        stopProgress();
+        showToast('Connection error. Is the server running?', 'error');
+        resetUI();
+    }
+};
+
+function resetUI() {
+    const btn = document.getElementById('gen-btn');
+    btn.disabled = false;
+    btn.classList.remove('loading');
+    document.getElementById('progress-wrap').classList.remove('show');
+    document.getElementById('progress-fill').style.width = '0%';
+}
+</script>
+</body>
+</html>
