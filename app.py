@@ -35,63 +35,104 @@ def index():
     return render_template('index.html')
 
 def is_video_educational(video_id, transcript_snippet):
-    """The AI Gatekeeper logic"""
     from modules.gemini_client import get_client
 
-    # Check 1: Expanded keyword list — covers Hindi/Urdu/regional content too
+    # ── Check 1: Keyword filter (same as before) ──
     forbidden_words = [
         'song', 'official video', 'lyrics', 'music video', 'audio',
         'full video', 'sad song', 'love song', 'romantic', 'lofi',
         'gaana', 'gana', 'filmi', 'bollywood', 'kollywood', 'tollywood',
         'lyrical video', 'feat.', 'ft.', 'album', 'single', 'track',
-        'subscribe for more songs', 'like share','nursery rhyme', 'nursery rhymes', 
-        'wheels on the bus', 'baby shark',
-        'kids song', 'children song', 'rhyme', 'lullaby', 'cartoon',
-        'cocomelon', 'bounce patrol', 'little baby bum', 'sing along',
-        'for kids', 'for babies', 'for children', 'bedtime song',
+        'subscribe for more songs', 'nursery rhyme', 'nursery rhymes',
+        'wheels on the bus', 'baby shark', 'kids song', 'children song',
+        'rhyme', 'lullaby', 'cartoon', 'cocomelon', 'bounce patrol',
+        'sing along', 'for kids', 'for babies', 'bedtime song',
         'bhajan', 'bhajans', 'aarti', 'kirtan', 'mantra', 'chalisa',
-        'hanuman chalisa', 'durga', 'ganesh', 'shiva', 'krishna bhajan',
-        'mata ki', 'jai mata', 'devotional', 'devotional song',
-        'prayer song', 'religious song', 'pooja', 'stuti', 'stotra',
-        'ambe tu hai', 'jai shri', 'om jai', 'ram bhajan','bhajan', 'bhajans', 'aarti', 'kirtan', 'mantra', 'chalisa',
-        'hanuman chalisa', 'durga', 'ganesh', 'shiva', 'krishna bhajan',
-        'mata ki', 'jai mata', 'devotional', 'devotional song',
-        'prayer song', 'religious song', 'pooja', 'stuti', 'stotra',
-        'ambe tu hai', 'jai shri', 'om jai', 'ram bhajan',
+        'hanuman chalisa', 'devotional', 'devotional song', 'prayer song',
+        'religious song', 'pooja', 'stuti', 'stotra', 'jai shri', 'om jai',
     ]
     if any(word in transcript_snippet.lower() for word in forbidden_words):
-        return False, "SmartNotes only works with educational content like lectures, tutorials, and documentaries — not songs or entertainment videos."
+        return False, "SmartNotes only works with educational content like lectures, tutorials, and documentaries."
 
-    # Check 2: Stronger AI prompt with more context + explicit Hindi awareness
-    client = get_client()
-    prompt = f"""You are a strict content classifier for an educational notes app.
+    # ── Check 2: Repetition detector ──
+    # Non-educational content (vlogs, entertainment, reactions) 
+    # has very low unique word ratio
+    words = transcript_snippet.lower().split()
+    if len(words) > 50:
+        unique_ratio = len(set(words)) / len(words)
+        if unique_ratio < 0.25:
+            # Less than 25% unique words = likely song/chant/repetitive content
+            return False, "SmartNotes only works with educational content like lectures, tutorials, and documentaries."
 
-Your job: decide if this YouTube transcript is from EDUCATIONAL content or NOT.
+    # ── Check 3: Educational signal detector ──
+    # Educational videos have these kinds of words
+    educational_signals = [
+        'learn', 'explain', 'understand', 'concept', 'example',
+        'because', 'therefore', 'however', 'function', 'process',
+        'method', 'step', 'first', 'second', 'finally', 'important',
+        'definition', 'means', 'refers', 'used', 'called', 'known',
+        'algorithm', 'theory', 'principle', 'difference', 'type',
+        'chapter', 'topic', 'today', 'tutorial', 'introduction',
+        'basically', 'actually', 'so', 'right', 'okay', 'now',
+        'question', 'answer', 'problem', 'solution', 'result',
+    ]
+    words_in_snippet = transcript_snippet.lower()
+    signal_count = sum(1 for word in educational_signals if word in words_in_snippet)
 
-EDUCATIONAL = lecture, tutorial, documentary, news report, explainer, how-to guide, course, interview about a topic.
-NOT EDUCATIONAL = song, music video, nursery rhyme, kids rhyme, baby poem, movie scene,
-film dialogue, entertainment show, sports commentary, prank, vlog, reaction video,
-poem, chant, repetitive lyrics, children's content, bhajan, aarti, kirtan, mantra,
-devotional song, religious chant, prayer, qawwali, gospel song, hymn, spiritual song,
-any content that is primarily music or singing regardless of language or religion.
+    if signal_count < 4:
+        # Too few educational signals = likely entertainment
+        return False, "SmartNotes only works with educational content like lectures, tutorials, and documentaries."
 
-IMPORTANT: If the text looks like song lyrics or film dialogue (even in Hindi, Urdu, or any other language), classify it as NOT EDUCATIONAL.
-
-Transcript sample:
-\"\"\"
-{transcript_snippet[:2000]}
-\"\"\"
-
-Reply with ONLY one word: VALID or INVALID."""
-
+    # ── Check 4: AI classifier (stronger prompt + better model) ──
     try:
-        response = client.models.generate_content(model="gemini-2.0-flash-lite", contents=prompt)
+        client = get_client()
+        prompt = f"""You are a strict content classifier for an educational notes app.
+
+Classify this YouTube transcript as EDUCATIONAL or NOT.
+
+EDUCATIONAL = lecture, tutorial, documentary, explainer, how-to, 
+              course, news report, interview about a topic, 
+              skill teaching, academic content.
+
+NOT EDUCATIONAL = vlog, reaction video, prank, entertainment, 
+                  travel video, daily routine, challenge video,
+                  unboxing, gaming commentary, gossip, drama,
+                  song, music, chant, poem, sports commentary,
+                  any content where no knowledge is being taught.
+
+KEY RULE: Ask yourself — "Would a student learn something 
+structured and reusable from this?" If NO → NOT EDUCATIONAL.
+
+Transcript:
+\"\"\"{transcript_snippet[:2000]}\"\"\"
+
+Reply with ONLY one word — either EDUCATIONAL or NOT_EDUCATIONAL.
+No explanation. No other words."""
+
+        response = client.models.generate_content(
+            model="gemini-2.0-flash",   # upgraded from flash-lite
+            contents=prompt
+        )
         decision = response.text.strip().upper()
-        is_valid = "VALID" in decision and "INVALID" not in decision
-        return is_valid, "SmartNotes only works with educational content like lectures, tutorials, and documentaries — not songs or entertainment videos."
-    except:
+
+        # Strict check — must say exactly EDUCATIONAL
+        if "NOT_EDUCATIONAL" in decision or "NOT EDUCATIONAL" in decision:
+            return False, "SmartNotes only works with educational content like lectures, tutorials, and documentaries."
+
+        if "EDUCATIONAL" not in decision:
+            # Ambiguous response → reject, don't allow
+            return False, "SmartNotes only works with educational content like lectures, tutorials, and documentaries."
+
         return True, ""
-    
+
+    except Exception as e:
+        # ⚠️ API failed → DON'T silently allow, be cautious
+        print(f"[gatekeeper] AI check failed: {e} — applying strict fallback")
+        # Re-run signal check with higher threshold as fallback
+        if signal_count >= 8:
+            return True, ""   # strong educational signals = probably fine
+        return False, "Could not verify content type. Please try again."
+        
 @app.route('/generate', methods=['POST'])
 def generate():
     video_url = request.form.get('video_url', '').strip()
