@@ -7,7 +7,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;500;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&family=DM+Serif+Display&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10.6.1/dist/mermaid.min.js"></script>
     <style>
         [data-theme="light"] {
             --bg:         #fafaf8;
@@ -1225,11 +1225,18 @@ function sanitizeMermaid(code) {
 
 /* ── INIT: run mermaid + save history on page load ── */
 document.addEventListener('DOMContentLoaded', function() {
-    setTimeout(async function() {
+    // Wait for mermaid to fully load before rendering
+    function tryRender(attempt) {
+        if (typeof mermaid === 'undefined' || !mermaid.render) {
+            if (attempt < 10) setTimeout(() => tryRender(attempt + 1), 300);
+            return;
+        }
         const savedScroll = window.scrollY;
-        await renderAllMermaid();
-        window.scrollTo({ top: savedScroll, behavior: 'instant' });
-    }, 300);
+        renderAllMermaid().then(() => {
+            window.scrollTo({ top: savedScroll, behavior: 'instant' });
+        });
+    }
+    setTimeout(() => tryRender(0), 200);
 
     // Save to localStorage history
     try {
@@ -1802,8 +1809,10 @@ function formatDate(dateStr) {
     } catch { return dateStr; }
 }
 
-// Auto-load on page ready
-document.addEventListener('DOMContentLoaded', loadRelatedVideos);
+// Auto-load related videos after slight delay (let page settle first)
+window.addEventListener('load', function() {
+    setTimeout(loadRelatedVideos, 800);
+});
 </script>
 </body>
 </html>

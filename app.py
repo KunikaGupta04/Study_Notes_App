@@ -373,30 +373,39 @@ def related_videos():
 
     # ── Step 2: Search YouTube Data API v3 ──
     try:
-        import urllib.parse, urllib.request, json as _json
+        import requests as _requests
 
-        params = urllib.parse.urlencode({
+        params = {
             'part':             'snippet',
             'q':                topic_query,
             'type':             'video',
             'maxResults':       8,
-            'videoCategoryId':  '27',          # Education
+            'videoCategoryId':  '27',
             'relevanceLanguage':'en',
             'safeSearch':       'strict',
             'key':              api_key,
-        })
-        url  = f'https://www.googleapis.com/youtube/v3/search?{params}'
-        req  = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
-        with urllib.request.urlopen(req, timeout=10) as r:
-            data = _json.loads(r.read().decode())
+        }
+        resp = _requests.get(
+            'https://www.googleapis.com/youtube/v3/search',
+            params=params,
+            timeout=10
+        )
+
+        if resp.status_code == 400:
+            return jsonify({'error': 'Invalid YouTube API key or bad request.'}), 400
+        if resp.status_code == 403:
+            return jsonify({'error': 'YouTube API quota exceeded or key restricted.'}), 403
+        if resp.status_code != 200:
+            return jsonify({'error': f'YouTube API returned {resp.status_code}'}), 500
+
+        data = resp.json()
 
         videos = []
         for item in data.get('items', []):
             vid_id  = item['id'].get('videoId', '')
             snippet = item.get('snippet', {})
-            if not vid_id or vid_id == video_id:   # skip current video
+            if not vid_id or vid_id == video_id:
                 continue
-            # Pick best thumbnail
             thumbs  = snippet.get('thumbnails', {})
             thumb   = (thumbs.get('high') or thumbs.get('medium') or thumbs.get('default') or {}).get('url', '')
             videos.append({
