@@ -352,21 +352,39 @@ def related_videos():
                 resp = client.models.generate_content(
                     model=MODELS[0],
                     contents=(
-                        f"Extract a short YouTube search query (4-7 words max) "
-                        f"from these study notes that would find similar educational videos.\n"
-                        f"Return ONLY the search query, nothing else. No quotes, no explanation.\n\n"
-                        f"Notes (first 1000 chars):\n{notes_raw[:1000]}"
+                        f"You are a YouTube search expert.\n\n"
+                        f"Read these study notes carefully and identify the SPECIFIC topic being taught.\n"
+                        f"Then write a YouTube search query (5-8 words) that would find similar "
+                        f"educational tutorial videos on the SAME specific subject.\n\n"
+                        f"Rules:\n"
+                        f"- Be SPECIFIC (e.g. 'python list comprehension tutorial' not 'overview')\n"
+                        f"- Include the subject name + key concept + 'tutorial' or 'explained'\n"
+                        f"- NEVER return generic words like 'overview', 'introduction', 'summary'\n"
+                        f"- Return ONLY the search query, no quotes, no explanation\n\n"
+                        f"Notes:\n{notes_raw[:2000]}"
                     )
                 )
                 topic_query = resp.text.strip().strip('"').strip("'")
-                break
+                # Reject if too generic
+                generic = ['overview', 'introduction', 'summary', 'notes', 'educational tutorial']
+                if any(topic_query.lower() == g for g in generic) or len(topic_query) < 8:
+                    topic_query = None
+                else:
+                    break
             except Exception:
                 continue
 
         if not topic_query:
-            # Fallback: extract first heading from notes
-            match = re.search(r'##\s+(.+)', notes_raw)
-            topic_query = match.group(1).strip() if match else "educational tutorial"
+            # Smarter fallback: find first non-generic heading
+            generic_headings = ['overview','introduction','summary','core concepts',
+                                 'how it works','key takeaways','applications','comparison']
+            for match in re.finditer(r'##\s+(.+)', notes_raw):
+                heading = match.group(1).strip()
+                if not any(g in heading.lower() for g in generic_headings):
+                    topic_query = heading + ' tutorial explained'
+                    break
+            if not topic_query:
+                topic_query = "educational tutorial"
 
     except Exception as e:
         topic_query = "educational tutorial"
@@ -380,7 +398,7 @@ def related_videos():
             'q':                topic_query,
             'type':             'video',
             'maxResults':       8,
-            'videoCategoryId':  '27',
+            'videoEmbeddable':  'true',
             'relevanceLanguage':'en',
             'safeSearch':       'strict',
             'key':              api_key,

@@ -1727,7 +1727,14 @@ async function sendScreenshot() {
         appendMsg('bot', '⚠️ Connection error. Please try again.');
     }
 
-    /* ── RELATED VIDEOS ── */
+    // Reset upload box
+    fileInput.value = '';
+    document.getElementById('screenshot-preview').style.display = 'none';
+    document.getElementById('upload-label').textContent  = 'Click or drag a screenshot here';
+    document.getElementById('screenshot-question').value = '';
+}
+
+/* ── RELATED VIDEOS ── */
 async function loadRelatedVideos() {
     const grid      = document.getElementById('related-grid');
     const loading   = document.getElementById('related-loading');
