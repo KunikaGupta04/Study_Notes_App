@@ -218,25 +218,45 @@ def handle_translation():
 @app.route('/chat', methods=['POST'])
 def chat():
     data = request.json
-    user_query = data.get("message")
-    notes_context = session.get('notes_raw', "")[:5000]
+    user_query = data.get("message", "").strip()
+    notes_context = session.get('notes_raw', "")[:6000]
 
-    prompt = (
-    f"You are a study assistant for SmartNotes AI. "
-    f"Answer ONLY based on the notes below. If the question is unrelated, "
-    f"say: 'This question is outside the scope of these notes.'\n\n"
-    f"NOTES:\n{notes_context}\n\nSTUDENT QUESTION: {user_query}"
-)
+    prompt = f"""You are a smart study assistant for SmartNotes AI.
+
+A student is studying a video and has these notes:
+---
+{notes_context}
+---
+
+STUDENT QUESTION: {user_query}
+
+YOUR BEHAVIOR RULES:
+1. If the question is DIRECTLY answered in the notes → answer from notes, mention it.
+2. If the question is RELATED to the video's topic but needs extra explanation 
+   (e.g. defining a term, explaining a concept briefly mentioned) → 
+   answer helpfully using your knowledge, but connect it back to the notes context.
+3. If the question is COMPLETELY UNRELATED to the video topic 
+   (e.g. asking about cricket when notes are about Python) → 
+   politely say: "That topic isn't covered in this video. 
+   I'm best used for questions related to what you're currently studying."
+
+TONE: Friendly, concise, student-focused. Use examples where helpful.
+FORMAT: Use bullet points or short paragraphs. Keep it under 150 words unless 
+the question genuinely needs more detail.
+
+Never say "outside the scope" in a robotic way. Always be helpful first."""
 
     from modules.summarizer import VALID_KEYS, MODELS
     from google import genai
     import time
 
-    for key_index, api_key in enumerate(VALID_KEYS):
+    for api_key in VALID_KEYS:
         client = genai.Client(api_key=api_key)
         for model in MODELS:
             try:
-                response = client.models.generate_content(model=model, contents=prompt)
+                response = client.models.generate_content(
+                    model=model, contents=prompt
+                )
                 return jsonify({"response": response.text})
             except Exception as e:
                 if "429" in str(e) or "RESOURCE_EXHAUSTED" in str(e):
@@ -248,7 +268,6 @@ def chat():
                     continue
 
     return jsonify({"response": "All AI keys are at limit. Try again in a minute."}), 503
-
 
 @app.route('/chat-screenshot', methods=['POST'])
 def chat_screenshot():
