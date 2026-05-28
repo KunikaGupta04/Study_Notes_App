@@ -124,6 +124,7 @@ def generate():
         session['notes_html'] = notes_html
         session['notes_raw'] = notes_raw
         session['video_id'] = video_id
+        session['video_url'] = video_url
         session.modified = True
         return jsonify({"success": True})
 
@@ -324,6 +325,93 @@ def chat_screenshot():
                     continue
 
     return jsonify({'reply': 'All API keys are at limit. Please try again in a minute.'}), 503
+
+
+@app.route('/related-videos', methods=['GET'])
+def related_videos():
+    """Fetch related educational YouTube videos based on current notes topic."""
+
+    video_id     = session.get('video_id', '')
+    notes_raw    = session.get('notes_raw', '')
+    if not notes_raw:
+        return jsonify({'error': 'No notes found. Please generate notes first.'}), 400
+
+    api_key = os.getenv('YOUTUBE_API_KEY', '').strip()
+    if not api_key:
+        return jsonify({'error': 'YouTube API key not configured.'}), 500
+
+    # ── Step 1: Extract topic from notes using Gemini ──
+    try:
+        from modules.gemini_client import VALID_KEYS, MODELS
+        from google import genai
+        topic_query = None
+
+        for key in VALID_KEYS:
+            client = genai.Client(api_key=key)
+            try:
+                resp = client.models.generate_content(
+                    model=MODELS[0],
+                    contents=(
+                        f"Extract a short YouTube search query (4-7 words max) "
+                        f"from these study notes that would find similar educational videos.\n"
+                        f"Return ONLY the search query, nothing else. No quotes, no explanation.\n\n"
+                        f"Notes (first 1000 chars):\n{notes_raw[:1000]}"
+                    )
+                )
+                topic_query = resp.text.strip().strip('"').strip("'")
+                break
+            except Exception:
+                continue
+
+        if not topic_query:
+            # Fallback: extract first heading from notes
+            match = re.search(r'##\s+(.+)', notes_raw)
+            topic_query = match.group(1).strip() if match else "educational tutorial"
+
+    except Exception as e:
+        topic_query = "educational tutorial"
+
+    # ── Step 2: Search YouTube Data API v3 ──
+    try:
+        import urllib.parse, urllib.request, json as _json
+
+        params = urllib.parse.urlencode({
+            'part':             'snippet',
+            'q':                topic_query,
+            'type':             'video',
+            'maxResults':       8,
+            'videoCategoryId':  '27',          # Education
+            'relevanceLanguage':'en',
+            'safeSearch':       'strict',
+            'key':              api_key,
+        })
+        url  = f'https://www.googleapis.com/youtube/v3/search?{params}'
+        req  = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+        with urllib.request.urlopen(req, timeout=10) as r:
+            data = _json.loads(r.read().decode())
+
+        videos = []
+        for item in data.get('items', []):
+            vid_id  = item['id'].get('videoId', '')
+            snippet = item.get('snippet', {})
+            if not vid_id or vid_id == video_id:   # skip current video
+                continue
+            # Pick best thumbnail
+            thumbs  = snippet.get('thumbnails', {})
+            thumb   = (thumbs.get('high') or thumbs.get('medium') or thumbs.get('default') or {}).get('url', '')
+            videos.append({
+                'id':          vid_id,
+                'title':       snippet.get('title', 'Untitled'),
+                'channel':     snippet.get('channelTitle', ''),
+                'thumbnail':   thumb,
+                'url':         f'https://www.youtube.com/watch?v={vid_id}',
+                'published':   snippet.get('publishedAt', '')[:10],
+            })
+
+        return jsonify({'videos': videos[:6], 'query': topic_query})
+
+    except Exception as e:
+        return jsonify({'error': f'YouTube API error: {str(e)}'}), 500
 
 
 @app.route('/debug/gemini')

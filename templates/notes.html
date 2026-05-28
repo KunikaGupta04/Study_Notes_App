@@ -459,7 +459,136 @@
         }
         .btn-modal-close:hover { background: var(--border); color: var(--text); }
 
-        /* ── CHATBOT FAB ── */
+        /* ── RELATED VIDEOS ── */
+        .related-section {
+            margin-top: 2rem;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 1.4rem 1.6rem;
+        }
+        .related-header {
+            display: flex; align-items: center; gap: 10px;
+            margin-bottom: 1.2rem; flex-wrap: wrap;
+        }
+        .related-title {
+            display: flex; align-items: center; gap: 8px;
+            font-weight: 700; font-size: 1rem; color: var(--text);
+        }
+        .related-title i { color: var(--accent); font-size: 1.1rem; }
+        .related-query {
+            flex: 1;
+            font-size: 0.75rem; color: var(--text3);
+            background: var(--surface2); border: 1px solid var(--border);
+            padding: 3px 10px; border-radius: 20px;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+            max-width: 300px;
+        }
+        .related-refresh {
+            background: var(--surface2); border: 1px solid var(--border);
+            width: 30px; height: 30px; border-radius: 8px;
+            cursor: pointer; color: var(--text3);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 0.8rem; transition: all 0.2s; margin-left: auto;
+        }
+        .related-refresh:hover { background: var(--accentbg); color: var(--accent); border-color: rgba(232,97,58,0.3); }
+        .related-refresh.spinning i { animation: spin 0.8s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Grid */
+        .related-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+        }
+        @media (max-width: 900px) { .related-grid { grid-template-columns: repeat(2, 1fr); } }
+        @media (max-width: 600px) { .related-grid { grid-template-columns: 1fr; } }
+
+        /* Video card */
+        .rv-card {
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: 14px; overflow: hidden;
+            text-decoration: none; color: var(--text);
+            transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+            display: flex; flex-direction: column;
+        }
+        .rv-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 28px rgba(0,0,0,0.15);
+            border-color: rgba(232,97,58,0.35);
+        }
+        .rv-thumb {
+            position: relative; width: 100%;
+            padding-top: 56.25%; /* 16:9 */
+            overflow: hidden; background: var(--bg2);
+        }
+        .rv-thumb img {
+            position: absolute; inset: 0;
+            width: 100%; height: 100%; object-fit: cover;
+            transition: transform 0.3s;
+        }
+        .rv-card:hover .rv-thumb img { transform: scale(1.05); }
+        .rv-play-overlay {
+            position: absolute; inset: 0;
+            display: flex; align-items: center; justify-content: center;
+            background: rgba(0,0,0,0); transition: background 0.2s;
+        }
+        .rv-card:hover .rv-play-overlay { background: rgba(0,0,0,0.3); }
+        .rv-play-overlay i {
+            font-size: 2.2rem; color: white;
+            opacity: 0; transform: scale(0.8);
+            transition: opacity 0.2s, transform 0.2s;
+        }
+        .rv-card:hover .rv-play-overlay i { opacity: 1; transform: scale(1); }
+
+        .rv-info { padding: 0.75rem 0.9rem; flex: 1; display: flex; flex-direction: column; gap: 4px; }
+        .rv-title {
+            font-size: 0.82rem; font-weight: 600; line-height: 1.4;
+            color: var(--text);
+            display: -webkit-box; -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical; overflow: hidden;
+        }
+        .rv-meta {
+            display: flex; align-items: center; justify-content: space-between;
+            margin-top: auto;
+        }
+        .rv-channel { font-size: 0.73rem; color: var(--accent); font-weight: 500; }
+        .rv-date    { font-size: 0.7rem; color: var(--text3); }
+
+        /* Skeleton loader */
+        .related-loading {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+        }
+        @media (max-width: 900px) { .related-loading { grid-template-columns: repeat(2, 1fr); } }
+        @media (max-width: 600px) { .related-loading { grid-template-columns: 1fr; } }
+
+        .rv-skeleton {
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: 14px; overflow: hidden;
+            height: 180px;
+            background: linear-gradient(
+                90deg,
+                var(--surface2) 25%,
+                var(--border) 50%,
+                var(--surface2) 75%
+            );
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
+        }
+        @keyframes shimmer { to { background-position: -200% 0; } }
+
+        /* Error state */
+        .related-error {
+            display: flex; align-items: center; gap: 10px;
+            padding: 1rem; background: var(--surface2);
+            border-radius: 12px; color: var(--text3);
+            font-size: 0.85rem;
+        }
+        .related-error i { color: #f59e0b; }
         .chat-fab {
             position: fixed; bottom: 1.8rem; right: 1.8rem;
             width: 58px; height: 58px;
@@ -829,6 +958,40 @@
             <!-- ✅ HARDCORE FIX: Notes injected directly by Flask — zero async, zero spinner -->
             <div id="notes-display">{{ notes_html | safe }}</div>
         </div>
+
+        <!-- RELATED VIDEOS SECTION -->
+        <div class="related-section" id="related-section">
+            <div class="related-header">
+                <div class="related-title">
+                    <i class="fa-solid fa-circle-play"></i>
+                    <span>Related Videos</span>
+                </div>
+                <span class="related-query" id="related-query"></span>
+                <button class="related-refresh" onclick="loadRelatedVideos()" title="Refresh">
+                    <i class="fa-solid fa-rotate-right" id="refresh-icon"></i>
+                </button>
+            </div>
+
+            <!-- Loading state -->
+            <div class="related-loading" id="related-loading">
+                <div class="rv-skeleton"></div>
+                <div class="rv-skeleton"></div>
+                <div class="rv-skeleton"></div>
+                <div class="rv-skeleton"></div>
+                <div class="rv-skeleton"></div>
+                <div class="rv-skeleton"></div>
+            </div>
+
+            <!-- Error state -->
+            <div class="related-error" id="related-error" style="display:none">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+                <span id="related-error-msg">Could not load related videos.</span>
+            </div>
+
+            <!-- Videos grid -->
+            <div class="related-grid" id="related-grid" style="display:none"></div>
+        </div>
+
     </main>
 </div>
 
@@ -1557,12 +1720,90 @@ async function sendScreenshot() {
         appendMsg('bot', '⚠️ Connection error. Please try again.');
     }
 
-    // Reset upload box
-    fileInput.value = '';
-    document.getElementById('screenshot-preview').style.display = 'none';
-    document.getElementById('upload-label').textContent  = 'Click or drag a screenshot here';
-    document.getElementById('screenshot-question').value = '';
+    /* ── RELATED VIDEOS ── */
+async function loadRelatedVideos() {
+    const grid      = document.getElementById('related-grid');
+    const loading   = document.getElementById('related-loading');
+    const errorBox  = document.getElementById('related-error');
+    const errorMsg  = document.getElementById('related-error-msg');
+    const queryBadge = document.getElementById('related-query');
+    const refreshBtn = document.querySelector('.related-refresh');
+
+    // Show loading state
+    grid.style.display    = 'none';
+    errorBox.style.display = 'none';
+    loading.style.display = 'grid';
+    refreshBtn.classList.add('spinning');
+
+    try {
+        const res  = await fetch('/related-videos');
+        const data = await res.json();
+
+        loading.style.display = 'none';
+        refreshBtn.classList.remove('spinning');
+
+        if (data.error) {
+            errorMsg.textContent   = data.error;
+            errorBox.style.display = 'flex';
+            return;
+        }
+
+        // Show search query badge
+        if (data.query) {
+            queryBadge.textContent = '🔍 ' + data.query;
+        }
+
+        // Build video cards
+        if (!data.videos || data.videos.length === 0) {
+            errorMsg.textContent   = 'No related videos found.';
+            errorBox.style.display = 'flex';
+            return;
+        }
+
+        grid.innerHTML = data.videos.map(v => `
+            <a class="rv-card" href="${v.url}" target="_blank" rel="noopener noreferrer">
+                <div class="rv-thumb">
+                    <img src="${v.thumbnail}" alt="${escapeHtml(v.title)}"
+                         loading="lazy"
+                         onerror="this.src='https://i.ytimg.com/vi/${v.id}/hqdefault.jpg'" />
+                    <div class="rv-play-overlay">
+                        <i class="fa-solid fa-circle-play"></i>
+                    </div>
+                </div>
+                <div class="rv-info">
+                    <div class="rv-title">${escapeHtml(v.title)}</div>
+                    <div class="rv-meta">
+                        <span class="rv-channel">${escapeHtml(v.channel)}</span>
+                        <span class="rv-date">${formatDate(v.published)}</span>
+                    </div>
+                </div>
+            </a>
+        `).join('');
+
+        grid.style.display = 'grid';
+
+    } catch(e) {
+        loading.style.display  = 'none';
+        refreshBtn.classList.remove('spinning');
+        errorMsg.textContent   = 'Network error. Please try again.';
+        errorBox.style.display = 'flex';
+    }
 }
+
+function escapeHtml(str) {
+    return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function formatDate(dateStr) {
+    if (!dateStr) return '';
+    try {
+        const d = new Date(dateStr);
+        return d.toLocaleDateString('en-US', { year:'numeric', month:'short' });
+    } catch { return dateStr; }
+}
+
+// Auto-load on page ready
+document.addEventListener('DOMContentLoaded', loadRelatedVideos);
 </script>
 </body>
 </html>
