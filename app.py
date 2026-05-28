@@ -122,21 +122,9 @@ def generate():
             return jsonify({"error": notes_html}), 503
             
         session['notes_html'] = notes_html
-        session['notes_raw']  = notes_raw
-        session['video_id']   = video_id
-        session['video_url']  = video_url
-
-        # Fetch real video title via YouTube oEmbed (free, no API key needed)
-        try:
-            import requests as _req
-            oembed = _req.get(
-                f'https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v={video_id}&format=json',
-                timeout=5
-            ).json()
-            session['video_title'] = oembed.get('title', '')
-        except Exception:
-            session['video_title'] = ''
-
+        session['notes_raw'] = notes_raw
+        session['video_id'] = video_id
+        session['video_url'] = video_url
         session.modified = True
         return jsonify({"success": True})
 
@@ -352,57 +340,54 @@ def related_videos():
     if not api_key:
         return jsonify({'error': 'YouTube API key not configured.'}), 500
 
-    video_title  = session.get('video_title', '').strip()
+    # ── Step 1: Extract topic from notes using Gemini ──
+    try:
+        from modules.gemini_client import VALID_KEYS, MODELS
+        from google import genai
+        topic_query = None
 
-    # ── Step 1: Build search query from video title (most accurate) ──
-    topic_query = None
-
-    if video_title:
-        try:
-            from modules.gemini_client import VALID_KEYS, MODELS
-            from google import genai
-            for key in VALID_KEYS:
-                client = genai.Client(api_key=key)
-                try:
-                    resp = client.models.generate_content(
-                        model=MODELS[0],
-                        contents=(
-                            f"Given this YouTube video title, create a search query to find "
-                            f"similar educational videos on the same topic.\n\n"
-                            f"Video title: {video_title}\n\n"
-                            f"Rules:\n"
-                            f"- Keep it 4-7 words\n"
-                            f"- Focus on the core subject/concept\n"
-                            f"- Add 'tutorial' or 'explained' if helpful\n"
-                            f"- Remove channel names, episode numbers, clickbait words\n"
-                            f"- Return ONLY the search query, nothing else\n\n"
-                            f"Example: 'Python Tutorial for Beginners' → 'python programming beginners tutorial'"
-                        )
+        for key in VALID_KEYS:
+            client = genai.Client(api_key=key)
+            try:
+                resp = client.models.generate_content(
+                    model=MODELS[0],
+                    contents=(
+                        f"You are a YouTube search expert.\n\n"
+                        f"Read these study notes carefully and identify the SPECIFIC topic being taught.\n"
+                        f"Then write a YouTube search query (5-8 words) that would find similar "
+                        f"educational tutorial videos on the SAME specific subject.\n\n"
+                        f"Rules:\n"
+                        f"- Be SPECIFIC (e.g. 'python list comprehension tutorial' not 'overview')\n"
+                        f"- Include the subject name + key concept + 'tutorial' or 'explained'\n"
+                        f"- NEVER return generic words like 'overview', 'introduction', 'summary'\n"
+                        f"- Return ONLY the search query, no quotes, no explanation\n\n"
+                        f"Notes:\n{notes_raw[:2000]}"
                     )
-                    topic_query = resp.text.strip().strip('"').strip("'")
+                )
+                topic_query = resp.text.strip().strip('"').strip("'")
+                # Reject if too generic
+                generic = ['overview', 'introduction', 'summary', 'notes', 'educational tutorial']
+                if any(topic_query.lower() == g for g in generic) or len(topic_query) < 8:
+                    topic_query = None
+                else:
                     break
-                except Exception:
-                    continue
-        except Exception:
-            pass
+            except Exception:
+                continue
 
-        # Fallback: clean up video title directly
         if not topic_query:
-            noise = r'\b(part \d+|ep\.?\s*\d+|\|\s*\w+|#\w+|full course|free|\d{4})\b'
-            topic_query = re.sub(noise, '', video_title, flags=re.IGNORECASE).strip()
-            topic_query = re.sub(r'\s+', ' ', topic_query)[:80]
+            # Smarter fallback: find first non-generic heading
+            generic_headings = ['overview','introduction','summary','core concepts',
+                                 'how it works','key takeaways','applications','comparison']
+            for match in re.finditer(r'##\s+(.+)', notes_raw):
+                heading = match.group(1).strip()
+                if not any(g in heading.lower() for g in generic_headings):
+                    topic_query = heading + ' tutorial explained'
+                    break
+            if not topic_query:
+                topic_query = "educational tutorial"
 
-    # ── Last resort: extract from notes headings ──
-    if not topic_query:
-        generic_headings = ['overview','introduction','summary','core concepts',
-                            'how it works','key takeaways','applications','comparison']
-        for match in re.finditer(r'##\s+(.+)', notes_raw):
-            heading = match.group(1).strip()
-            if not any(g in heading.lower() for g in generic_headings):
-                topic_query = heading + ' tutorial explained'
-                break
-        if not topic_query:
-            topic_query = "educational tutorial"
+    except Exception as e:
+        topic_query = "educational tutorial"
 
     # ── Step 2: Search YouTube Data API v3 ──
     try:
